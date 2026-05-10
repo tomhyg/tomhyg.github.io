@@ -1086,14 +1086,16 @@
       .thTL-item {
         grid-template-columns: 44px 1fr !important;
       }
-      .thTL-item-left .thTL-card,
+      /* All spacers hidden — all cards visible in col 2 */
+      .thTL-item-left .thTL-spacer,
       .thTL-item-right .thTL-spacer { display: none; }
       .thTL-item-left .thTL-node,
       .thTL-item-right .thTL-node   { grid-column: 1 !important; }
-      .thTL-item-left .thTL-spacer,
-      .thTL-item-right .thTL-card   { grid-column: 2 !important; }
-      .thTL-item-right .thTL-card   { transform: translateX(24px); }
+      .thTL-item-left .thTL-card,
+      .thTL-item-right .thTL-card   { grid-column: 2 !important; display: block; }
       .thTL-card.is-visible         { transform: translateX(0) !important; }
+      /* Remove text justify on mobile */
+      .thTL-summary, .thTL-detail   { text-align: left; }
     }
 
     /* ── Skills ── */
@@ -1587,6 +1589,13 @@
       .thSection-inner { padding: var(--s-7) var(--s-5); }
       .thFooter-inner { flex-direction: column; gap: var(--s-3); text-align: center; }
       .thContact-row { flex-direction: column; align-items: flex-start; }
+      /* Stats: reduce label size to avoid wrap */
+      .thStat-label { font-size: 9px; letter-spacing: 0.06em; }
+      /* Skills: single column on mobile */
+      .thSkillsSplit { grid-template-columns: 1fr; }
+      .thSkillCol-left { border-right: none; border-bottom: 1px solid var(--border); }
+      /* Skill row: stack label above chips */
+      .thSkillRow { grid-template-columns: 1fr; gap: 6px; }
     }
   </style>
 </head>
