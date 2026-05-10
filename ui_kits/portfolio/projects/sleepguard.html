@@ -1,0 +1,846 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The SleepGuard — Tom Huyghe</title>
+  <link rel="icon" type="image/png" href="../../../assets/favicon.png" media="(prefers-color-scheme: dark)" />
+  <link rel="icon" type="image/png" href="../../../assets/favicon-light.png" media="(prefers-color-scheme: light)" />
+  <meta name="description" content="Sleep quality wearable — Arduino, MAX30105 PPG, HRV analysis, FIR filter, OLED display. Academic project ESME SUDRIA × UDESC Brazil 2023." />
+  <link rel="stylesheet" href="../../../colors_and_type.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    html, body { margin: 0; padding: 0; }
+    body { background: var(--bg-0); overflow-x: hidden; }
+    img { display: block; max-width: 100%; }
+
+    /* ── Accent: midnight blue ── */
+    :root {
+      --blue:      #7B8FE8;
+      --blue-soft: #A5B3F5;
+      --blue-deep: #5468CC;
+      --blue-glow: rgba(123,143,232,0.25);
+      --blue-pale: rgba(123,143,232,0.08);
+    }
+
+    /* ── Progress bar ── */
+    .pProgress {
+      position: fixed; top: 0; left: 0; z-index: 200;
+      height: 2px; width: 0%;
+      background: linear-gradient(90deg, var(--blue), var(--blue-soft));
+      transition: width 80ms linear; pointer-events: none;
+    }
+
+    /* ── Mouse glow ── */
+    .pMouseGlow {
+      position: fixed; pointer-events: none; z-index: 4;
+      width: 700px; height: 700px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(123,143,232,0.07) 0%, transparent 65%);
+      transform: translate(-50%, -50%);
+      opacity: 0; transition: opacity 0.4s;
+    }
+
+    /* ── Reveals ── */
+    .rv { opacity:0; transform:translateY(22px); transition:opacity .7s var(--ease),transform .7s var(--ease); }
+    .rv.on { opacity:1; transform:translateY(0); }
+    .rv-left { opacity:0; transform:translateX(-28px); transition:opacity .7s var(--ease),transform .7s var(--ease); }
+    .rv-left.on { opacity:1; transform:translateX(0); }
+    .rv-right { opacity:0; transform:translateX(28px); transition:opacity .75s var(--ease),transform .75s var(--ease); }
+    .rv-right.on { opacity:1; transform:translateX(0); }
+    .rv-scale { opacity:0; transform:scale(.94); transition:opacity .6s var(--ease),transform .6s var(--ease); }
+    .rv-scale.on { opacity:1; transform:scale(1); }
+    @media (prefers-reduced-motion:reduce) { .rv,.rv-left,.rv-right,.rv-scale{opacity:1;transform:none;transition:none;} }
+
+    /* ── Nav ── */
+    .pNav { position:sticky; top:0; z-index:50; border-bottom:1px solid transparent; transition:background var(--motion) var(--ease),border-color var(--motion) var(--ease); }
+    .pNav.scrolled { background:rgba(7,7,11,.85); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); border-bottom-color:var(--border); }
+    .pNav-inner { max-width:var(--max-width); margin:0 auto; padding:10px var(--gutter); display:flex; align-items:center; gap:var(--s-5); }
+    .pNav-brand { display:inline-flex; align-items:center; gap:10px; font-weight:600; font-size:15px; letter-spacing:-.01em; color:var(--fg-1); text-decoration:none; white-space:nowrap; flex-shrink:0; }
+    .pNav-brand:hover { color:var(--fg-1); }
+    .pNav-brand-logo { height:100px; width:auto; object-fit:contain; flex-shrink:0; filter:brightness(0) invert(1); transition:filter var(--motion-fast) var(--ease); margin:-18px -12px; }
+    .pNav-brand:hover .pNav-brand-logo { filter:brightness(0) invert(1) drop-shadow(0 0 8px rgba(124,92,255,0.6)); }
+    .pNav-links { display:flex; gap:var(--s-5); flex:1; }
+    .pNav-links a { font-size:13px; color:var(--fg-2); font-weight:500; white-space:nowrap; text-decoration:none; position:relative; padding-bottom:2px; transition:color var(--motion-fast) var(--ease); }
+    .pNav-links a::after { content:""; position:absolute; bottom:-2px; left:0; width:0; height:1px; background:var(--accent); transition:width var(--motion) var(--ease); }
+    .pNav-links a:hover { color:var(--fg-1); }
+    .pBurger { display:none; flex-direction:column; gap:5px; background:none; border:none; padding:4px; cursor:pointer; margin-left:auto; }
+    .pBurger span { display:block; width:20px; height:1.5px; background:var(--fg-2); transition:transform var(--motion-fast) var(--ease),opacity var(--motion-fast) var(--ease); transform-origin:center; }
+    .pBurger.is-open span:nth-child(1){transform:translateY(6.5px) rotate(45deg);}
+    .pBurger.is-open span:nth-child(2){opacity:0;}
+    .pBurger.is-open span:nth-child(3){transform:translateY(-6.5px) rotate(-45deg);}
+    .pMobileMenu { display:none; position:fixed; inset:0; top:57px; background:rgba(7,7,11,.97); backdrop-filter:blur(16px); z-index:49; flex-direction:column; padding:var(--s-7) var(--gutter); gap:var(--s-5); border-top:1px solid var(--border); }
+    .pMobileMenu.is-open { display:flex; }
+    .pMobileMenu a { font-size:22px; font-weight:600; color:var(--fg-2); text-decoration:none; letter-spacing:-.01em; display:flex; align-items:center; gap:14px; transition:color var(--motion-fast) var(--ease); }
+    .pMobileMenu a:hover { color:var(--fg-1); }
+
+    /* ── Hero ── */
+    .pHero { position:relative; overflow:hidden; min-height:92vh; }
+    .pHero-bg { position:absolute; inset:0; z-index:0; }
+    .pHero-texture { position:absolute; inset:0; background:url("../../../assets/texture-violet.jpg") center/cover; mix-blend-mode:screen; opacity:.09; }
+    .pHero-veil { position:absolute; inset:0; background:linear-gradient(180deg,rgba(7,7,11,.15) 0%,rgba(7,7,11,.55) 55%,var(--bg-0) 100%); }
+    .pHero-ambient { position:absolute; right:8%; top:50%; transform:translateY(-50%); width:520px; height:520px; border-radius:50%; background:radial-gradient(circle,rgba(123,143,232,.12) 0%,rgba(165,179,245,.04) 45%,transparent 70%); pointer-events:none; z-index:1; }
+    .pHero-inner { position:relative; z-index:2; max-width:var(--max-width); margin:0 auto; padding:0 var(--gutter); min-height:92vh; display:grid; grid-template-columns:1fr 1fr; align-items:center; gap:var(--s-8); }
+    .pHero-left { display:flex; flex-direction:column; gap:var(--s-5); padding:var(--s-10) 0 var(--s-8); }
+    .pHero-right { display:flex; align-items:center; justify-content:center; padding:var(--s-8) 0; }
+    .pHero-eyebrow { font-family:var(--font-mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--fg-3); display:flex; align-items:center; gap:10px; }
+    .pHero-eyebrow::before { content:""; width:20px; height:1px; background:var(--blue); flex-shrink:0; }
+    .pHero-title { font-size:clamp(44px,6.5vw,96px); line-height:.92; font-weight:600; letter-spacing:-.04em; color:var(--fg-1); margin:0; }
+    .pHero-sub { font-size:17px; line-height:27px; color:var(--fg-2); max-width:440px; margin:0; }
+    .pHero-scroll { display:inline-flex; align-items:center; gap:8px; font-family:var(--font-mono); font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--fg-4); }
+    .pHero-scroll svg { animation:scrollBounce 2.2s ease-in-out infinite; }
+    @keyframes scrollBounce { 0%,100%{transform:translateY(0);}50%{transform:translateY(5px);} }
+
+    /* ── Wristband device mockup ── */
+    .pDevice-wrap {
+      display:flex; flex-direction:column; align-items:center; gap:0;
+      animation:deviceFloat 7s ease-in-out infinite;
+      filter: drop-shadow(0 24px 60px rgba(0,0,0,0.55)) drop-shadow(0 0 60px rgba(123,143,232,0.18));
+      will-change:transform;
+    }
+    @keyframes deviceFloat { 0%,100%{transform:translateY(0) rotate(-1deg);}50%{transform:translateY(-14px) rotate(1deg);} }
+    .pBand-top {
+      width:80px; height:28px;
+      background:linear-gradient(180deg,#1a1f3a,#141828);
+      border-radius:8px 8px 0 0;
+      border:1px solid rgba(123,143,232,.2);
+      border-bottom:none;
+      margin-bottom:-1px;
+    }
+    .pWatch-body {
+      width:200px;
+      background:linear-gradient(160deg,#1a1f3a 0%,#0e1225 100%);
+      border-radius:28px;
+      border:1px solid rgba(123,143,232,.25);
+      padding:16px 14px 14px;
+      position:relative;
+      z-index:1;
+    }
+    /* Button on side */
+    .pWatch-body::after {
+      content:""; position:absolute; right:-5px; top:50%; transform:translateY(-50%);
+      width:4px; height:28px; background:#1a1f3a;
+      border-radius:0 3px 3px 0;
+      border:1px solid rgba(123,143,232,.2);
+      border-left:none;
+    }
+    .pBand-bot {
+      width:80px; height:40px;
+      background:linear-gradient(180deg,#141828,#1a1f3a);
+      border-radius:0 0 8px 8px;
+      border:1px solid rgba(123,143,232,.2);
+      border-top:none;
+      margin-top:-1px;
+    }
+
+    /* OLED display inside watch */
+    .pOled {
+      background:#000;
+      border-radius:10px;
+      padding:10px 10px 8px;
+      border:1px solid #0a0f1e;
+      font-family:var(--font-mono);
+      overflow:hidden;
+    }
+    .pOled-title {
+      font-size:8px; letter-spacing:.12em; text-transform:uppercase;
+      color:rgba(123,143,232,.6); margin-bottom:6px; text-align:center;
+    }
+    /* Sleep phase waveform (SVG) */
+    .pOled-wave { width:100%; margin-bottom:8px; }
+    .pWaveLine {
+      stroke-dasharray: 320;
+      stroke-dashoffset: 320;
+      animation: waveDraw 3s 0.8s var(--ease) forwards;
+    }
+    @keyframes waveDraw { to { stroke-dashoffset: 0; } }
+    /* Phase labels */
+    .pOled-phases { display:flex; flex-direction:column; gap:3px; }
+    .pOled-phase { display:flex; justify-content:space-between; align-items:center; }
+    .pOled-phase-name { font-size:7px; letter-spacing:.06em; text-transform:uppercase; }
+    .pOled-phase-time { font-size:7px; color:rgba(123,143,232,.5); }
+    .pOled-phase.wake  .pOled-phase-name { color:#ff9999; }
+    .pOled-phase.rem   .pOled-phase-name { color:var(--blue-soft); }
+    .pOled-phase.light .pOled-phase-name { color:#99ccff; }
+    .pOled-phase.deep  .pOled-phase-name { color:#6688ee; }
+    /* BPM readout */
+    .pOled-bpm {
+      display:flex; justify-content:space-between; align-items:center;
+      margin-top:8px; padding-top:6px;
+      border-top:1px solid #111;
+    }
+    .pOled-bpm-val { font-size:18px; font-weight:600; color:var(--blue); line-height:1; }
+    .pOled-bpm-lbl { font-size:7px; color:rgba(123,143,232,.4); text-transform:uppercase; letter-spacing:.06em; }
+    .pOled-dot { width:5px; height:5px; border-radius:50%; background:var(--blue-soft); animation:blink 1.4s ease-in-out infinite; align-self:flex-start; margin-top:2px; }
+    @keyframes blink { 0%,100%{opacity:1;}50%{opacity:.2;} }
+
+    /* ── Stats bar ── */
+    .pStats { border-top:1px solid var(--border); border-bottom:1px solid var(--border); background:rgba(14,14,20,.85); backdrop-filter:blur(10px); }
+    .pStats-inner { max-width:var(--max-width); margin:0 auto; padding:0 var(--gutter); display:flex; }
+    .pStat { flex:1; padding:var(--s-5) var(--s-4); border-right:1px solid var(--border); opacity:0; transform:translateY(14px); transition:opacity .55s var(--ease),transform .55s var(--ease); }
+    .pStat:last-child { border-right:0; }
+    .pStat.on { opacity:1; transform:translateY(0); }
+    .pStat-val { font-size:28px; font-weight:600; letter-spacing:-.025em; line-height:1; margin-bottom:5px; background:linear-gradient(135deg,var(--fg-1) 30%,var(--blue-soft) 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    .pStat-label { font-family:var(--font-mono); font-size:10px; letter-spacing:.07em; text-transform:uppercase; color:var(--fg-3); }
+
+    /* ── Sections ── */
+    .pSection { border-top:1px solid var(--border); }
+    .pSection-inner { max-width:var(--max-width); margin:0 auto; padding:var(--s-9) var(--gutter); display:grid; grid-template-columns:220px 1fr; gap:var(--s-9); align-items:start; }
+    .pSection-label { font-family:var(--font-mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--fg-3); position:sticky; top:80px; display:flex; align-items:center; gap:10px; }
+    .pSection-label::before { content:""; width:16px; height:1px; background:var(--blue); flex-shrink:0; }
+    .pSection-body { display:flex; flex-direction:column; gap:var(--s-6); }
+    .pSection-title { font-size:38px; line-height:44px; font-weight:600; letter-spacing:-.025em; color:var(--fg-1); margin:0; }
+    .pSection-text { font-size:16px; line-height:27px; color:var(--fg-2); margin:0; max-width:640px; }
+
+    /* ── Spec table ── */
+    .pSpecs { display:flex; flex-direction:column; }
+    .pSpec { display:grid; grid-template-columns:160px 1fr; gap:var(--s-4); padding:13px 0; border-top:1px solid var(--border); }
+    .pSpec:first-child { border-top:0; }
+    .pSpec dt { font-family:var(--font-mono); font-size:11px; letter-spacing:.07em; text-transform:uppercase; color:var(--fg-3); padding-top:2px; }
+    .pSpec dd { margin:0; font-size:14px; line-height:22px; color:var(--fg-1); }
+
+    /* ── Chips ── */
+    .pChips { display:flex; flex-wrap:wrap; gap:6px; }
+    .pChip { font-family:var(--font-mono); font-size:11px; padding:5px 11px; border:1px solid var(--border); border-radius:999px; color:var(--fg-2); letter-spacing:.02em; transition:border-color var(--motion-fast) var(--ease),color var(--motion-fast) var(--ease); cursor:default; }
+    .pChip:hover { border-color:var(--blue); color:var(--blue-soft); }
+
+    /* ── Sleep phase cards ── */
+    .pPhases { display:grid; grid-template-columns:repeat(4,1fr); gap:var(--s-3); }
+    .pPhase { background:var(--bg-1); border:1px solid var(--border); border-radius:var(--r-3); padding:var(--s-4) var(--s-4) var(--s-3); display:flex; flex-direction:column; gap:8px; transition:border-color var(--motion) var(--ease), background var(--motion) var(--ease); }
+    .pPhase:hover { background:var(--bg-2); }
+    .pPhase-dot { width:10px; height:10px; border-radius:50%; }
+    .pPhase.wake  .pPhase-dot { background:#ff9999; box-shadow:0 0 8px rgba(255,153,153,.4); }
+    .pPhase.rem   .pPhase-dot { background:var(--blue-soft); box-shadow:0 0 8px rgba(165,179,245,.4); }
+    .pPhase.light .pPhase-dot { background:#99ccff; box-shadow:0 0 8px rgba(153,204,255,.4); }
+    .pPhase.deep  .pPhase-dot { background:var(--blue); box-shadow:0 0 8px rgba(123,143,232,.4); }
+    .pPhase-name { font-size:13px; font-weight:600; color:var(--fg-1); letter-spacing:-.01em; }
+    .pPhase-bpm { font-family:var(--font-mono); font-size:11px; color:var(--fg-3); }
+    .pPhase-time { font-size:12px; color:var(--fg-2); }
+
+    /* ── Sleep cycle chart ── */
+    .pChart { background:var(--bg-1); border:1px solid var(--border); border-radius:var(--r-3); padding:var(--s-5); }
+    .pChart-title { font-family:var(--font-mono); font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--fg-3); margin-bottom:var(--s-4); display:flex; align-items:center; gap:8px; }
+    .pChart-title::before { content:""; width:12px; height:1px; background:var(--blue); }
+    .pChart-svg { width:100%; overflow:visible; }
+    .pChart-line {
+      stroke-dasharray: 600;
+      stroke-dashoffset: 600;
+      animation: chartDraw 2.5s 0.3s var(--ease) forwards;
+    }
+    @keyframes chartDraw { to { stroke-dashoffset: 0; } }
+    .pChart-labels { display:flex; justify-content:space-between; margin-top:8px; }
+    .pChart-label { font-family:var(--font-mono); font-size:10px; color:var(--fg-4); letter-spacing:.04em; }
+
+    /* ── Result cards ── */
+    .pResults { display:grid; grid-template-columns:1fr 1fr; gap:var(--s-4); }
+    .pResult { background:var(--bg-1); border:1px solid var(--border); border-radius:var(--r-3); padding:var(--s-5) var(--s-5) var(--s-4); display:flex; flex-direction:column; gap:6px; transition:border-color var(--motion) var(--ease),background var(--motion) var(--ease); }
+    .pResult:hover { border-color:var(--border-strong); background:var(--bg-2); }
+    .pResult-val { font-size:42px; font-weight:600; letter-spacing:-.03em; line-height:1; background:linear-gradient(135deg,var(--fg-1) 30%,var(--blue-soft) 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    .pResult-label { font-size:13px; line-height:20px; color:var(--fg-2); }
+
+    /* ── GitHub link ── */
+    .pGithub { display:inline-flex; align-items:center; gap:var(--s-3); background:var(--bg-1); border:1px solid var(--border); border-radius:var(--r-2); padding:12px 20px; text-decoration:none; color:var(--fg-1); font-size:14px; font-weight:500; align-self:flex-start; transition:border-color var(--motion-fast) var(--ease),background var(--motion-fast) var(--ease),box-shadow var(--motion-fast) var(--ease); }
+    .pGithub:hover { border-color:var(--blue); background:var(--blue-pale); box-shadow:0 0 0 1px rgba(123,143,232,.2); color:var(--fg-1); }
+
+    /* ── Lang toggle ── */
+    .pNav-right { display:flex; align-items:center; gap:var(--s-3); }
+    .pLang { display:flex; align-items:center; gap:2px; background:var(--bg-2); border:1px solid var(--border); border-radius:var(--r-1); padding:2px; }
+    .pLangBtn { background:none; border:none; cursor:pointer; font-family:var(--font-mono); font-size:10px; letter-spacing:.06em; color:var(--fg-3); padding:3px 7px; border-radius:2px; transition:all var(--motion-fast) var(--ease); }
+    .pLangBtn.is-active { background:var(--bg-3); color:var(--fg-1); }
+    .pLangBtn:hover:not(.is-active) { color:var(--fg-2); }
+
+    /* ── Back to portfolio (last project) ── */
+    .pBack { border-top:1px solid var(--border); background:var(--bg-1); }
+    .pBack-inner { max-width:var(--max-width); margin:0 auto; padding:var(--s-8) var(--gutter); display:flex; align-items:center; justify-content:space-between; }
+    .pBack-label { font-family:var(--font-mono); font-size:10px; letter-spacing:.07em; text-transform:uppercase; color:var(--fg-3); }
+    .pBack-link { font-size:22px; font-weight:600; letter-spacing:-.015em; color:var(--fg-1); text-decoration:none; display:inline-flex; align-items:center; gap:var(--s-3); transition:color var(--motion-fast) var(--ease); }
+    .pBack-link svg { transition:transform var(--motion-fast) var(--ease); }
+    .pBack-link:hover { color:var(--blue-soft); }
+    .pBack-link:hover svg { transform:translateX(-5px); }
+
+    /* ── Footer ── */
+    footer { border-top:1px solid var(--border); }
+    .pFooter { max-width:var(--max-width); margin:0 auto; padding:var(--s-5) var(--gutter); display:flex; justify-content:space-between; align-items:center; font-family:var(--font-mono); font-size:11px; letter-spacing:.04em; color:var(--fg-3); }
+
+    /* ── Stagger ── */
+    .pSection-body>*:nth-child(1){transition-delay:0ms}
+    .pSection-body>*:nth-child(2){transition-delay:80ms}
+    .pSection-body>*:nth-child(3){transition-delay:160ms}
+    .pSection-body>*:nth-child(4){transition-delay:240ms}
+    .pSection-body>*:nth-child(5){transition-delay:320ms}
+
+    /* ── Responsive ── */
+    @media (max-width:960px) {
+      .pNav-links { display:none; }
+      .pBurger { display:flex; }
+      .pHero-inner { grid-template-columns:1fr; min-height:auto; }
+      .pHero-right { display:none; }
+      .pHero-left { padding:var(--s-9) 0 var(--s-7); }
+      .pSection-inner { grid-template-columns:1fr; gap:var(--s-6); }
+      .pSection-label { position:static; }
+      .pStats-inner { flex-wrap:wrap; }
+      .pStat { flex:1 1 45%; }
+      .pResults { grid-template-columns:1fr; }
+      .pPhases { grid-template-columns:1fr 1fr; }
+      .pBack-inner { flex-direction:column; gap:var(--s-4); align-items:flex-start; }
+    }
+    @media (max-width:600px) {
+      .pHero-title { font-size:48px; }
+      .pSection-inner { padding:var(--s-7) var(--s-5); }
+      .pStat { flex:1 1 100%; }
+      .pPhases { grid-template-columns:1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="pProgress" id="pProgress"></div>
+  <div class="pMouseGlow" id="pMouseGlow"></div>
+
+  <!-- NAV -->
+  <header class="pNav" id="pNav">
+    <div class="pNav-inner">
+      <a href="../index.html" class="pNav-brand">
+        <img src="../../../assets/logo.png" alt="" class="pNav-brand-logo" />
+        Tom Huyghe
+      </a>
+      <nav class="pNav-links">
+        <a href="../index.html#work" data-i18n="nav.work">Work</a>
+        <a href="../index.html#skills" data-i18n="nav.skills">Skills</a>
+        <a href="../index.html#about" data-i18n="nav.about">About</a>
+        <a href="../index.html#contact" data-i18n="nav.contact">Contact</a>
+      </nav>
+      <div class="pLang">
+        <button class="pLangBtn" data-lang="en" onclick="setLang('en')">EN</button>
+        <button class="pLangBtn" data-lang="fr" onclick="setLang('fr')">FR</button>
+      </div>
+      <button class="pBurger" id="pBurger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+  <div class="pMobileMenu" id="pMobileMenu">
+    <a href="../index.html#work" data-i18n="nav.work" onclick="closeMobileMenu()">Work</a>
+    <a href="../index.html#skills" data-i18n="nav.skills" onclick="closeMobileMenu()">Skills</a>
+    <a href="../index.html#about" data-i18n="nav.about" onclick="closeMobileMenu()">About</a>
+    <a href="../index.html#contact" data-i18n="nav.contact" onclick="closeMobileMenu()">Contact</a>
+    <div class="pLang" style="margin-top:var(--s-4)">
+      <button class="pLangBtn" data-lang="en" onclick="setLang('en');closeMobileMenu()">EN</button>
+      <button class="pLangBtn" data-lang="fr" onclick="setLang('fr');closeMobileMenu()">FR</button>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <section class="pHero">
+    <div class="pHero-bg">
+      <div class="pHero-texture"></div>
+      <div class="pHero-veil"></div>
+    </div>
+    <div class="pHero-ambient"></div>
+
+    <div class="pHero-inner">
+      <div class="pHero-left">
+        <div class="pHero-eyebrow rv" id="rv0" data-i18n="hero.eyebrow">EMBEDDED · 2023 · ACADEMIC</div>
+        <h1 class="pHero-title rv" id="rv1">THE<br />SLEEP<br />GUARD</h1>
+        <p class="pHero-sub rv" id="rv2" data-i18n="hero.sub">
+          Sleep quality wearable with HRV-based phase detection. MAX30105 PPG sensor, FIR digital filter, real-time OLED display — validated over 7-hour sessions with 3–5 full cycles.
+        </p>
+        <div class="pHero-scroll rv" id="rv3">
+          <span data-i18n="hero.scroll">Scroll to explore</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+        </div>
+      </div>
+
+      <!-- Wristband device mockup -->
+      <div class="pHero-right rv-right" id="rv4">
+        <div class="pDevice-wrap">
+          <div class="pBand-top"></div>
+          <div class="pWatch-body">
+            <div class="pOled">
+              <div class="pOled-title">TheSleepGuard</div>
+              <!-- Mini sleep waveform on OLED -->
+              <svg class="pOled-wave" viewBox="0 0 160 32" fill="none" height="32">
+                <!-- Y-axis phase lines -->
+                <line x1="0" y1="8"  x2="160" y2="8"  stroke="#ffffff08" stroke-width=".5"/>
+                <line x1="0" y1="16" x2="160" y2="16" stroke="#ffffff08" stroke-width=".5"/>
+                <line x1="0" y1="24" x2="160" y2="24" stroke="#ffffff08" stroke-width=".5"/>
+                <!-- Sleep cycle waveform -->
+                <polyline class="pWaveLine"
+                  points="0,6 12,6 16,10 20,16 26,22 30,28 36,28 42,22 46,16 52,10 56,6 64,6 68,12 72,20 76,28 82,28 88,20 92,14 96,8 104,6 110,12 114,18 118,26 124,26 130,18 134,12 140,8 148,6 160,6"
+                  stroke="#7B8FE8" stroke-width="1.5"
+                  stroke-linecap="round" stroke-linejoin="round"
+                  fill="none"/>
+                <!-- Phase labels on OLED -->
+                <text x="1"   y="7"  font-family="monospace" font-size="5" fill="#ff999966">W</text>
+                <text x="1"   y="15" font-family="monospace" font-size="5" fill="#7B8FE866">R</text>
+                <text x="1"   y="23" font-family="monospace" font-size="5" fill="#99ccff66">L</text>
+                <text x="1"   y="31" font-family="monospace" font-size="5" fill="#6688ee66">D</text>
+              </svg>
+              <div class="pOled-phases">
+                <div class="pOled-phase wake">
+                  <span class="pOled-phase-name">WAKE</span>
+                  <span class="pOled-phase-time">0:26</span>
+                </div>
+                <div class="pOled-phase rem">
+                  <span class="pOled-phase-name">REM</span>
+                  <span class="pOled-phase-time">1:23</span>
+                </div>
+                <div class="pOled-phase light">
+                  <span class="pOled-phase-name">LIGHT</span>
+                  <span class="pOled-phase-time">3:45</span>
+                </div>
+                <div class="pOled-phase deep">
+                  <span class="pOled-phase-name">DEEP</span>
+                  <span class="pOled-phase-time">1:52</span>
+                </div>
+              </div>
+              <div class="pOled-bpm">
+                <div>
+                  <div class="pOled-bpm-val">58</div>
+                  <div class="pOled-bpm-lbl">BPM</div>
+                </div>
+                <div class="pOled-dot"></div>
+                <div style="text-align:right">
+                  <div style="font-size:9px;color:#7B8FE8;font-family:monospace">REM</div>
+                  <div class="pOled-bpm-lbl">PHASE</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="pBand-bot"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS BAR -->
+  <div class="pStats">
+    <div class="pStats-inner">
+      <div class="pStat" id="st0">
+        <div class="pStat-val" data-target="4" data-suffix="">4</div>
+        <div class="pStat-label" data-i18n="stat.0">Sleep phases</div>
+      </div>
+      <div class="pStat" id="st1">
+        <div class="pStat-val" data-target="7" data-suffix="h">7h</div>
+        <div class="pStat-label" data-i18n="stat.1">Validated session</div>
+      </div>
+      <div class="pStat" id="st2">
+        <div class="pStat-val" data-target="5" data-suffix="">3–5</div>
+        <div class="pStat-label" data-i18n="stat.2">Cycles / night</div>
+      </div>
+      <div class="pStat" id="st3">
+        <div class="pStat-val" data-target="30" data-suffix="">30</div>
+        <div class="pStat-label" data-i18n="stat.3">FIR filter order</div>
+      </div>
+      <div class="pStat" id="st4">
+        <div class="pStat-val" data-target="2" data-suffix="">2</div>
+        <div class="pStat-label" data-i18n="stat.4">Engineers</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTEXT -->
+  <section class="pSection">
+    <div class="pSection-inner">
+      <div class="pSection-label rv-left" data-i18n="ctx.label">Context</div>
+      <div class="pSection-body">
+        <h2 class="pSection-title rv" data-i18n="ctx.title">Consumer sleep trackers show you a score. We built the signal.</h2>
+        <p class="pSection-text rv" data-i18n="ctx.body1">
+          Most wearables abstract away the underlying physiology — you get a colored ring or a "sleep score" with no transparency. TheSleepGuard was built from the sensor layer up: raw PPG signal, digital filtering, HRV computation, and real-time sleep phase classification, all running on a microcontroller worn on the wrist.
+        </p>
+        <p class="pSection-text rv" data-i18n="ctx.body2">
+          Built during a 6-month international exchange between <strong style="color:var(--fg-1)">ESME SUDRIA (Paris)</strong> and <strong style="color:var(--fg-1)">UDESC (Joinville, Brazil)</strong>, August–December 2023. Academically validated for M1 Embedded Systems. Two engineers, one supervisor, one wristband.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- HARDWARE -->
+  <section class="pSection">
+    <div class="pSection-inner">
+      <div class="pSection-label rv-left" data-i18n="hw.label">Hardware</div>
+      <div class="pSection-body">
+        <h2 class="pSection-title rv" data-i18n="hw.title">MAX30105. OLED 128×64. SD card.</h2>
+        <p class="pSection-text rv" data-i18n="hw.text">
+          The core sensor is the MAX30105 multi-spectral PPG — it captures the light absorption signature of blood flow through the wrist, providing both heart rate and the beat-to-beat variability (HRV) that sleep phase classification depends on. An infrared threshold detects whether the sensor is worn correctly before recording.
+        </p>
+        <dl class="pSpecs rv">
+          <div class="pSpec"><dt>MCU</dt><dd>Arduino-compatible — C++ firmware, Arduino IDE</dd></div>
+          <div class="pSpec"><dt>Sensor</dt><dd>MAX30105 PPG — multi-spectral, IR presence detection</dd></div>
+          <div class="pSpec"><dt>Display</dt><dd>OLED 128×64 — real-time phase + BPM + duration display</dd></div>
+          <div class="pSpec"><dt>Storage</dt><dd>SD card — CSV logging (timestamp, BPM) for post-analysis</dd></div>
+          <div class="pSpec"><dt>Audio</dt><dd>Motion detection accelerometer — movement classification</dd></div>
+          <div class="pSpec"><dt>Interface</dt><dd>Physical navigation button — menu: Start Sleep / Start Analysis</dd></div>
+          <div class="pSpec"><dt>Power</dt><dd>USB — wristband form factor</dd></div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- SIGNAL PROCESSING -->
+  <section class="pSection">
+    <div class="pSection-inner">
+      <div class="pSection-label rv-left" data-i18n="sig.label">Signal processing</div>
+      <div class="pSection-body">
+        <h2 class="pSection-title rv" data-i18n="sig.title">MATLAB filter design. Arduino implementation.</h2>
+        <p class="pSection-text rv" data-i18n="sig.text">
+          The raw PPG signal is noisy — motion artifacts, ambient light, hardware noise. The processing pipeline starts with FFT analysis to identify the dominant frequencies, then applies a FIR low-pass filter (order 30, cutoff 0.1 Hz) designed in MATLAB and implemented as convolution coefficients in the Arduino firmware.
+        </p>
+
+        <!-- Sleep cycle chart -->
+        <div class="pChart rv">
+          <div class="pChart-title" data-i18n="sig.chart">7-hour session — reconstructed sleep architecture</div>
+          <svg class="pChart-svg" viewBox="0 0 560 80" height="80" fill="none">
+            <!-- Grid lines -->
+            <line x1="40" y1="10" x2="540" y2="10" stroke="#ffffff06" stroke-width=".5"/>
+            <line x1="40" y1="27" x2="540" y2="27" stroke="#ffffff06" stroke-width=".5"/>
+            <line x1="40" y1="44" x2="540" y2="44" stroke="#ffffff06" stroke-width=".5"/>
+            <line x1="40" y1="61" x2="540" y2="61" stroke="#ffffff06" stroke-width=".5"/>
+            <!-- Phase labels -->
+            <text x="0" y="13"  font-family="monospace" font-size="7" fill="#ff999944">WAKE</text>
+            <text x="2" y="30"  font-family="monospace" font-size="7" fill="#7B8FE844">REM</text>
+            <text x="0" y="47"  font-family="monospace" font-size="7" fill="#99ccff44">LIGHT</text>
+            <text x="0" y="64"  font-family="monospace" font-size="7" fill="#6688ee44">DEEP</text>
+            <!-- Sleep waveform (7h realistic pattern) -->
+            <polyline class="pChart-line"
+              points="40,10 68,10 74,20 80,35 86,52 92,68 110,68 118,52 124,38 130,27 144,27 150,35 156,52 162,68 178,68 186,52 192,38 198,27 210,20 228,27 234,35 240,52 250,68 266,68 274,52 280,38 286,27 300,20 316,27 322,38 330,52 338,68 354,68 360,52 366,38 374,27 390,20 400,27 412,38 420,27 440,20 460,27 480,20 500,10 540,10"
+              stroke="url(#waveGrad)" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round"/>
+            <defs>
+              <linearGradient id="waveGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%"   stop-color="#7B8FE8"/>
+                <stop offset="100%" stop-color="#A5B3F5"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          <div class="pChart-labels">
+            <span class="pChart-label">0h</span>
+            <span class="pChart-label">1h</span>
+            <span class="pChart-label">2h</span>
+            <span class="pChart-label">3h</span>
+            <span class="pChart-label">4h</span>
+            <span class="pChart-label">5h</span>
+            <span class="pChart-label">6h</span>
+            <span class="pChart-label">7h</span>
+          </div>
+        </div>
+
+        <dl class="pSpecs rv">
+          <div class="pSpec"><dt>Analysis</dt><dd>FFT — frequency identification (Python: FFT.py, NumPy/SciPy)</dd></div>
+          <div class="pSpec"><dt>Filter design</dt><dd>FIR low-pass — Order 30, Cutoff 0.1 Hz — designed in MATLAB</dd></div>
+          <div class="pSpec"><dt>Filter impl.</dt><dd>Convolution of BeatAVG with FIR coefficients — runs on MCU</dd></div>
+          <div class="pSpec"><dt>HRV metric</dt><dd>Beat-to-beat interval variability → phase classification</dd></div>
+          <div class="pSpec"><dt>Data format</dt><dd>CSV on SD card — timestamp + BPM per sample</dd></div>
+          <div class="pSpec"><dt>Visualization</dt><dd>MATLAB (FFTMAT.m) + Python (CONVO.py, Matplotlib/Pandas)</dd></div>
+        </dl>
+        <div class="pChips rv">
+          <span class="pChip">C++</span>
+          <span class="pChip">Arduino IDE</span>
+          <span class="pChip">MAX30105</span>
+          <span class="pChip">PPG</span>
+          <span class="pChip">HRV</span>
+          <span class="pChip">FIR filter</span>
+          <span class="pChip">FFT</span>
+          <span class="pChip">MATLAB</span>
+          <span class="pChip">Python</span>
+          <span class="pChip">NumPy</span>
+          <span class="pChip">SciPy</span>
+          <span class="pChip">Pandas</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLEEP PHASES -->
+  <section class="pSection">
+    <div class="pSection-inner">
+      <div class="pSection-label rv-left" data-i18n="phases.label">Sleep phases</div>
+      <div class="pSection-body">
+        <h2 class="pSection-title rv" data-i18n="phases.title">Four phases. One HRV threshold per transition.</h2>
+        <p class="pSection-text rv" data-i18n="phases.text">
+          Sleep phase classification is based on heart rate thresholds derived from HRV analysis. Each phase has a distinct BPM range — the firmware classifies in real time and displays both the current phase and cumulative duration per phase on the OLED.
+        </p>
+        <div class="pPhases rv-scale">
+          <div class="pPhase wake">
+            <div class="pPhase-dot"></div>
+            <div class="pPhase-name" data-i18n="phase.0.name">Wake</div>
+            <div class="pPhase-bpm">&gt; 73 BPM</div>
+            <div class="pPhase-time" data-i18n="phase.0.time">~0:26 / night</div>
+          </div>
+          <div class="pPhase rem">
+            <div class="pPhase-dot"></div>
+            <div class="pPhase-name" data-i18n="phase.1.name">REM</div>
+            <div class="pPhase-bpm">58 – 73 BPM</div>
+            <div class="pPhase-time" data-i18n="phase.1.time">~1:23 / night</div>
+          </div>
+          <div class="pPhase light">
+            <div class="pPhase-dot"></div>
+            <div class="pPhase-name" data-i18n="phase.2.name">Light</div>
+            <div class="pPhase-bpm">45 – 58 BPM</div>
+            <div class="pPhase-time" data-i18n="phase.2.time">~3:45 / night</div>
+          </div>
+          <div class="pPhase deep">
+            <div class="pPhase-dot"></div>
+            <div class="pPhase-name" data-i18n="phase.3.name">Deep</div>
+            <div class="pPhase-bpm">&lt; 45 BPM</div>
+            <div class="pPhase-time" data-i18n="phase.3.time">~1:52 / night</div>
+          </div>
+        </div>
+        <p class="pSection-text rv" style="font-size:14px;color:var(--fg-3)" data-i18n="phases.example">
+          Example output from a validated 7h session: WAKE 0:26:00 · REM 1:23:00 · LIGHT 3:45:00 · DEEP 1:52:00 — total 7:26:00. 4 complete 90-minute cycles detected.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- RESULTS & TEAM -->
+  <section class="pSection">
+    <div class="pSection-inner">
+      <div class="pSection-label rv-left" data-i18n="res.label">Results &amp; team</div>
+      <div class="pSection-body">
+        <h2 class="pSection-title rv" data-i18n="res.title">Academically validated. ESME × UDESC.</h2>
+        <p class="pSection-text rv" data-i18n="res.text">
+          Functional wristband prototype, validated over 7-hour sleep sessions with accurate cycle detection. Supervised by Prof. Alexander Paterno (UDESC, Brazil). Validated as M1 Embedded Systems academic project between two international engineering schools.
+        </p>
+        <div class="pResults rv-scale">
+          <div class="pResult">
+            <div class="pResult-val" data-target="7" data-suffix="h">7h</div>
+            <div class="pResult-label" data-i18n="result.0">Validated continuous sleep recording session</div>
+          </div>
+          <div class="pResult">
+            <div class="pResult-val">4</div>
+            <div class="pResult-label" data-i18n="result.1">Sleep phases classified in real time on-device</div>
+          </div>
+          <div class="pResult">
+            <div class="pResult-val">3–5</div>
+            <div class="pResult-label" data-i18n="result.2">Sleep cycles detected per night (~90 min each)</div>
+          </div>
+          <div class="pResult">
+            <div class="pResult-val" data-target="30" data-suffix="">30</div>
+            <div class="pResult-label" data-i18n="result.3">FIR filter order — designed in MATLAB, embedded in C++</div>
+          </div>
+        </div>
+        <dl class="pSpecs rv">
+          <div class="pSpec"><dt>My role</dt><dd>Embedded firmware, signal processing pipeline, MATLAB filter design</dd></div>
+          <div class="pSpec"><dt>Co-developer</dt><dd>Adèle Faillé</dd></div>
+          <div class="pSpec"><dt>Supervisor</dt><dd>Prof. Alexander Paterno — UDESC, Joinville, Brazil</dd></div>
+          <div class="pSpec"><dt>Schools</dt><dd>ESME SUDRIA (Paris) ↔ UDESC (Brazil) — international exchange</dd></div>
+          <div class="pSpec"><dt>Duration</dt><dd>August – December 2023</dd></div>
+          <div class="pSpec"><dt>Validation</dt><dd>M1 Embedded Systems — academic project, passed</dd></div>
+        </dl>
+        <a href="https://github.com/tomhyg/TheSleepGuard" target="_blank" rel="noopener noreferrer" class="pGithub rv">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+          </svg>
+          <span data-i18n="cta.github">View source — github.com/tomhyg/TheSleepGuard</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- BACK TO PORTFOLIO (last project) -->
+  <div class="pBack">
+    <div class="pBack-inner">
+      <div><div class="pBack-label" data-i18n="back.label">All projects</div></div>
+      <a href="../index.html" class="pBack-link">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+        <span data-i18n="back.link">Back to portfolio</span>
+      </a>
+    </div>
+  </div>
+
+  <footer>
+    <div class="pFooter">
+      <span>© 2025 Tom Huyghe · Paris</span>
+      <a href="../index.html" style="color:var(--fg-3);text-decoration:none;font-family:var(--font-mono);font-size:11px">← Portfolio</a>
+    </div>
+  </footer>
+
+  <script>
+    const nav = document.getElementById("pNav");
+    window.addEventListener("scroll", () => { nav.classList.toggle("scrolled", window.scrollY > 24); }, { passive: true });
+
+    const progress = document.getElementById("pProgress");
+    window.addEventListener("scroll", () => {
+      const d = document.documentElement.scrollHeight - window.innerHeight;
+      progress.style.width = (d > 0 ? (window.scrollY / d) * 100 : 0) + "%";
+    }, { passive: true });
+
+    const glow = document.getElementById("pMouseGlow");
+    let gv = false;
+    document.addEventListener("mousemove", e => {
+      glow.style.left = e.clientX + "px"; glow.style.top = e.clientY + "px";
+      if (!gv) { glow.style.opacity = "1"; gv = true; }
+    });
+    document.addEventListener("mouseleave", () => { glow.style.opacity = "0"; gv = false; });
+
+    ["rv0","rv1","rv2","rv3"].forEach((id, i) => {
+      const el = document.getElementById(id);
+      if (el) setTimeout(() => el.classList.add("on"), 180 + i * 130);
+    });
+    setTimeout(() => { const el = document.getElementById("rv4"); if (el) el.classList.add("on"); }, 500);
+
+    function countUp(el) {
+      const target = parseFloat(el.dataset.target);
+      const suffix = el.dataset.suffix || "";
+      if (isNaN(target)) return;
+      if (target === 0) { el.textContent = "0" + suffix; return; }
+      const duration = 1100; const startTime = performance.now();
+      function tick(now) {
+        const p = Math.min((now - startTime) / duration, 1);
+        const eased = 1 - Math.pow(1 - p, 3);
+        el.textContent = Math.round(target * eased) + suffix;
+        if (p < 1) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    }
+
+    const statEls = [0,1,2,3,4].map(i => document.getElementById("st" + i));
+    const statsObs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          statEls.forEach((el, i) => {
+            if (!el) return;
+            setTimeout(() => { el.classList.add("on"); const v = el.querySelector("[data-target]"); if (v) countUp(v); }, i * 90);
+          });
+          statsObs.disconnect();
+        }
+      });
+    }, { threshold: 0.3 });
+    if (statEls[0]) statsObs.observe(statEls[0].parentElement);
+
+    const resultObs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.querySelectorAll("[data-target]").forEach((el, i) => setTimeout(() => countUp(el), i * 120));
+          resultObs.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.2 });
+    document.querySelectorAll(".pResults").forEach(el => resultObs.observe(el));
+
+    const revealObs = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add("on"); revealObs.unobserve(e.target); } });
+    }, { threshold: 0.10 });
+    document.querySelectorAll(".rv, .rv-left, .rv-right, .rv-scale").forEach(el => {
+      if (!el.id || !el.id.startsWith("rv")) revealObs.observe(el);
+    });
+
+    /* ── i18n ── */
+    const COPY = {
+      en: {
+        'hero.eyebrow': 'EMBEDDED · 2023 · ACADEMIC',
+        'hero.sub': 'Sleep quality wearable with HRV-based phase detection. MAX30105 PPG sensor, FIR digital filter, real-time OLED display — validated over 7-hour sessions with 3–5 full cycles.',
+        'hero.scroll': 'Scroll to explore',
+        'stat.0': 'Sleep phases',
+        'stat.1': 'Validated session',
+        'stat.2': 'Cycles / night',
+        'stat.3': 'FIR filter order',
+        'stat.4': 'Engineers',
+        'ctx.label': 'Context',
+        'ctx.title': 'Consumer sleep trackers show you a score. We built the signal.',
+        'ctx.body1': 'Most wearables abstract away the underlying physiology — you get a colored ring or a "sleep score" with no transparency. TheSleepGuard was built from the sensor layer up: raw PPG signal, digital filtering, HRV computation, and real-time sleep phase classification, all running on a microcontroller worn on the wrist.',
+        'ctx.body2': 'Built during a 6-month international exchange between <strong style="color:var(--fg-1)">ESME SUDRIA (Paris)</strong> and <strong style="color:var(--fg-1)">UDESC (Joinville, Brazil)</strong>, August–December 2023. Academically validated for M1 Embedded Systems. Two engineers, one supervisor, one wristband.',
+        'hw.label': 'Hardware',
+        'hw.title': 'MAX30105. OLED 128×64. SD card.',
+        'hw.text': 'The core sensor is the MAX30105 multi-spectral PPG — it captures the light absorption signature of blood flow through the wrist, providing both heart rate and the beat-to-beat variability (HRV) that sleep phase classification depends on. An infrared threshold detects whether the sensor is worn correctly before recording.',
+        'sig.label': 'Signal processing',
+        'sig.title': 'MATLAB filter design. Arduino implementation.',
+        'sig.text': 'The raw PPG signal is noisy — motion artifacts, ambient light, hardware noise. The processing pipeline starts with FFT analysis to identify the dominant frequencies, then applies a FIR low-pass filter (order 30, cutoff 0.1 Hz) designed in MATLAB and implemented as convolution coefficients in the Arduino firmware.',
+        'sig.chart': '7-hour session — reconstructed sleep architecture',
+        'phases.label': 'Sleep phases',
+        'phases.title': 'Four phases. One HRV threshold per transition.',
+        'phases.text': 'Sleep phase classification is based on heart rate thresholds derived from HRV analysis. Each phase has a distinct BPM range — the firmware classifies in real time and displays both the current phase and cumulative duration per phase on the OLED.',
+        'phase.0.name': 'Wake',
+        'phase.0.time': '~0:26 / night',
+        'phase.1.name': 'REM',
+        'phase.1.time': '~1:23 / night',
+        'phase.2.name': 'Light',
+        'phase.2.time': '~3:45 / night',
+        'phase.3.name': 'Deep',
+        'phase.3.time': '~1:52 / night',
+        'phases.example': 'Example output from a validated 7h session: WAKE 0:26:00 · REM 1:23:00 · LIGHT 3:45:00 · DEEP 1:52:00 — total 7:26:00. 4 complete 90-minute cycles detected.',
+        'res.label': 'Results & team',
+        'res.title': 'Academically validated. ESME × UDESC.',
+        'res.text': 'Functional wristband prototype, validated over 7-hour sleep sessions with accurate cycle detection. Supervised by Prof. Alexander Paterno (UDESC, Brazil). Validated as M1 Embedded Systems academic project between two international engineering schools.',
+        'result.0': 'Validated continuous sleep recording session',
+        'result.1': 'Sleep phases classified in real time on-device',
+        'result.2': 'Sleep cycles detected per night (~90 min each)',
+        'result.3': 'FIR filter order — designed in MATLAB, embedded in C++',
+        'cta.github': 'View source — github.com/tomhyg/TheSleepGuard',
+        'back.label': 'All projects',
+        'back.link': 'Back to portfolio',
+        'nav.work': 'Work', 'nav.skills': 'Skills', 'nav.about': 'About', 'nav.contact': 'Contact'
+      },
+      fr: {
+        'hero.eyebrow': 'EMBARQUÉ · 2023 · ACADÉMIQUE',
+        'hero.sub': 'Wearable de qualité du sommeil avec détection de phases par VFC. Capteur PPG MAX30105, filtre numérique FIR, affichage OLED temps réel — validé sur des sessions de 7h avec 3 à 5 cycles complets.',
+        'hero.scroll': 'Défiler pour explorer',
+        'stat.0': 'Phases de sommeil',
+        'stat.1': 'Session validée',
+        'stat.2': 'Cycles / nuit',
+        'stat.3': "Ordre du filtre FIR",
+        'stat.4': 'Ingénieurs',
+        'ctx.label': 'Contexte',
+        'ctx.title': 'Les trackers grand public affichent un score. Nous avons construit le signal.',
+        'ctx.body1': 'La plupart des wearables abstraient la physiologie sous-jacente — vous obtenez un anneau coloré ou un "score de sommeil" sans transparence. TheSleepGuard a été construit depuis la couche capteur : signal PPG brut, filtrage numérique, calcul de VFC et classification des phases de sommeil en temps réel, le tout sur un microcontrôleur porté au poignet.',
+        'ctx.body2': 'Développé lors d\'un échange international de 6 mois entre <strong style="color:var(--fg-1)">ESME SUDRIA (Paris)</strong> et <strong style="color:var(--fg-1)">UDESC (Joinville, Brésil)</strong>, août–décembre 2023. Validé académiquement en M1 Systèmes Embarqués. Deux ingénieurs, un encadrant, un bracelet.',
+        'hw.label': 'Matériel',
+        'hw.title': 'MAX30105. OLED 128×64. Carte SD.',
+        'hw.text': "Le capteur central est le PPG multi-spectral MAX30105 — il capte la signature d'absorption lumineuse du flux sanguin au poignet, fournissant à la fois la fréquence cardiaque et la variabilité battement-à-battement (VFC) dont dépend la classification des phases de sommeil. Un seuil infrarouge détecte si le capteur est correctement porté avant l'enregistrement.",
+        'sig.label': 'Traitement du signal',
+        'sig.title': 'Conception du filtre sous MATLAB. Implémentation Arduino.',
+        'sig.text': "Le signal PPG brut est bruité — artefacts de mouvement, lumière ambiante, bruit matériel. Le pipeline de traitement commence par une analyse FFT pour identifier les fréquences dominantes, puis applique un filtre passe-bas FIR (ordre 30, fréquence de coupure 0,1 Hz) conçu sous MATLAB et implémenté en coefficients de convolution dans le firmware Arduino.",
+        'sig.chart': 'Session de 7h — architecture de sommeil reconstruite',
+        'phases.label': 'Phases de sommeil',
+        'phases.title': 'Quatre phases. Un seuil VFC par transition.',
+        'phases.text': "La classification des phases de sommeil repose sur des seuils de fréquence cardiaque dérivés de l'analyse de la VFC. Chaque phase a une plage BPM distincte — le firmware classe en temps réel et affiche sur l'OLED la phase courante et la durée cumulée par phase.",
+        'phase.0.name': 'Éveil',
+        'phase.0.time': '~0:26 / nuit',
+        'phase.1.name': 'REM',
+        'phase.1.time': '~1:23 / nuit',
+        'phase.2.name': 'Léger',
+        'phase.2.time': '~3:45 / nuit',
+        'phase.3.name': 'Profond',
+        'phase.3.time': '~1:52 / nuit',
+        'phases.example': "Exemple de sortie d'une session validée de 7h : ÉVEIL 0:26:00 · REM 1:23:00 · LÉGER 3:45:00 · PROFOND 1:52:00 — total 7:26:00. 4 cycles complets de 90 min détectés.",
+        'res.label': 'Résultats & équipe',
+        'res.title': 'Validé académiquement. ESME × UDESC.',
+        'res.text': "Prototype de bracelet fonctionnel, validé sur des sessions de sommeil de 7h avec détection précise des cycles. Encadré par le Prof. Alexander Paterno (UDESC, Brésil). Validé en tant que projet académique M1 Systèmes Embarqués entre deux écoles d'ingénieurs internationales.",
+        'result.0': "Session d'enregistrement de sommeil continu validée",
+        'result.1': 'Phases de sommeil classifiées en temps réel sur le dispositif',
+        'result.2': 'Cycles de sommeil détectés par nuit (~90 min chacun)',
+        'result.3': 'Ordre du filtre FIR — conçu sous MATLAB, embarqué en C++',
+        'cta.github': 'Voir les sources — github.com/tomhyg/TheSleepGuard',
+        'back.label': 'Tous les projets',
+        'back.link': 'Retour au portfolio',
+        'nav.work': 'Projets', 'nav.skills': 'Compétences', 'nav.about': 'À propos', 'nav.contact': 'Contact'
+      }
+    };
+
+    function setLang(l) {
+      localStorage.setItem('th-lang', l);
+      document.documentElement.lang = l;
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const t = COPY[l][el.dataset.i18n];
+        if (t !== undefined) el.innerHTML = t;
+      });
+      document.querySelectorAll('.pLangBtn').forEach(b => b.classList.toggle('is-active', b.dataset.lang === l));
+    }
+    /* ── Mobile burger ── */
+    const burger = document.getElementById("pBurger");
+    const mobileMenu = document.getElementById("pMobileMenu");
+    if (burger && mobileMenu) {
+      burger.addEventListener("click", () => {
+        burger.classList.toggle("is-open");
+        mobileMenu.classList.toggle("is-open");
+      });
+    }
+    function closeMobileMenu() {
+      if (burger) burger.classList.remove("is-open");
+      if (mobileMenu) mobileMenu.classList.remove("is-open");
+    }
+    (function(){ const l = localStorage.getItem('th-lang') || 'en'; setLang(l); })();
+  </script>
+</body>
+</html>

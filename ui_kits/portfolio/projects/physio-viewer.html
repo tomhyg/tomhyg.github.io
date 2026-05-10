@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PHYSIO VIEWER — Tom Huyghe</title>
+  <link rel="icon" type="image/png" href="../../../assets/favicon.png" media="(prefers-color-scheme: dark)" />
+  <link rel="icon" type="image/png" href="../../../assets/favicon-light.png" media="(prefers-color-scheme: light)" />
+  <meta name="description" content="Qt/QML desktop application for real-time physiological data visualization — ECG/PPG live curves, USB extraction, AWS cloud sync. Built for PULSAR." />
+  <link rel="stylesheet" href="../../../colors_and_type.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    html, body { margin: 0; padding: 0; }
+    body { background: var(--bg-0); overflow-x: hidden; }
+    img { display: block; max-width: 100%; }
+
+    :root {
+      --cyan:      #5B9CF6;
+      --cyan-soft: #7FB3FF;
+      --cyan-glow: rgba(91,156,246,0.22);
+      --cyan-pale: rgba(91,156,246,0.08);
+      --success:   #00D26A;
+    }
+
+    .pProgress { position: fixed; top: 0; left: 0; z-index: 200; height: 2px; width: 0%; background: linear-gradient(90deg, var(--cyan), var(--success)); transition: width 80ms linear; pointer-events: none; }
+    .pMouseGlow { position: fixed; pointer-events: none; z-index: 4; width: 700px; height: 700px; border-radius: 50%; background: radial-gradient(circle, rgba(91,156,246,0.06) 0%, transparent 65%); transform: translate(-50%, -50%); opacity: 0; transition: opacity 0.4s; }
+    .rv { opacity: 0; transform: translateY(22px); transition: opacity 0.7s var(--ease), transform 0.7s var(--ease); }
+    .rv.on { opacity: 1; transform: translateY(0); }
+    .rv-left { opacity: 0; transform: translateX(-28px); transition: opacity 0.7s var(--ease), transform 0.7s var(--ease); }
+    .rv-left.on { opacity: 1; transform: translateX(0); }
+    .rv-right { opacity: 0; transform: translateX(28px); transition: opacity 0.75s var(--ease), transform 0.75s var(--ease); }
+    .rv-right.on { opacity: 1; transform: translateX(0); }
+    .rv-scale { opacity: 0; transform: scale(0.94); transition: opacity 0.6s var(--ease), transform 0.6s var(--ease); }
+    .rv-scale.on { opacity: 1; transform: scale(1); }
+    @media (prefers-reduced-motion: reduce) { .rv,.rv-left,.rv-right,.rv-scale { opacity:1; transform:none; transition:none; } }
+
+    .pNav { position: sticky; top: 0; z-index: 50; border-bottom: 1px solid transparent; transition: background var(--motion) var(--ease), border-color var(--motion) var(--ease); }
+    .pNav.scrolled { background: rgba(7,7,11,0.85); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-bottom-color: var(--border); }
+    .pNav-inner { max-width: var(--max-width); margin: 0 auto; padding: 0 var(--gutter); height: 60px; display: flex; align-items: center; gap: var(--s-6); }
+    .pNav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--fg-1); font-size: 13px; font-weight: 600; }
+    .pNav-brand-logo { width: 22px; height: 22px; border-radius: 4px; }
+    .pNav-links { display: flex; align-items: center; gap: var(--s-5); margin-left: auto; }
+    .pNav-links a { font-size: 13px; color: var(--fg-3); text-decoration: none; transition: color var(--motion-fast) var(--ease); }
+    .pNav-links a:hover { color: var(--fg-1); }
+
+    .pHero { position: relative; overflow: hidden; min-height: 88vh; }
+    .pHero-bg { position: absolute; inset: 0; z-index: 0; }
+    .pHero-texture { position: absolute; inset: 0; background: url("../../../assets/texture-teal.jpg") center/cover; mix-blend-mode: screen; opacity: 0.09; }
+    .pHero-veil { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(7,7,11,0.1) 0%, rgba(7,7,11,0.5) 60%, var(--bg-0) 100%); }
+    .pHero-ambient { position: absolute; right: 6%; top: 50%; transform: translateY(-50%); width: 520px; height: 520px; border-radius: 50%; background: radial-gradient(circle, var(--cyan-glow) 0%, transparent 65%); pointer-events: none; }
+    .pHero-inner { position: relative; z-index: 2; max-width: var(--max-width); margin: 0 auto; padding: 0 var(--gutter); display: grid; grid-template-columns: 1fr auto; align-items: center; gap: var(--s-8); }
+    .pHero-left { display: flex; flex-direction: column; gap: var(--s-5); padding: var(--s-10) 0 var(--s-8); }
+    .pHero-right { display: flex; align-items: center; justify-content: center; padding: var(--s-8) 0; }
+    .pHero-eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-3); display: flex; align-items: center; gap: 10px; }
+    .pHero-eyebrow::before { content: ""; width: 20px; height: 1px; background: var(--cyan); flex-shrink: 0; }
+    .pHero-title { font-size: clamp(52px, 7vw, 100px); line-height: 0.92; font-weight: 700; letter-spacing: -0.04em; color: var(--fg-1); margin: 0; }
+    .pHero-title span { color: var(--cyan); }
+    .pHero-sub { font-size: 17px; line-height: 26px; color: var(--fg-2); max-width: 520px; }
+    .pHero-badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border: 1px solid var(--cyan); border-radius: 20px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cyan); width: fit-content; }
+
+    /* ECG signal visualization in hero */
+    .pHero-signal { width: 380px; }
+    .pECG-wrap { background: var(--bg-1); border: 1px solid var(--border); border-radius: var(--r-3); padding: var(--s-5); }
+    .pECG-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--cyan); margin-bottom: var(--s-3); display: flex; align-items: center; gap: 8px; }
+    .pECG-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--success); animation: blink 1s ease-in-out infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .pECG-svg { width: 100%; height: 80px; }
+    .pECG-line { stroke: var(--success); stroke-width: 1.5; fill: none; stroke-linecap: round; stroke-linejoin: round; animation: dash 3s linear infinite; stroke-dasharray: 600; stroke-dashoffset: 600; }
+    @keyframes dash { to { stroke-dashoffset: 0; } }
+    .pECG-meta { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--s-3); margin-top: var(--s-4); }
+    .pECG-stat { display: flex; flex-direction: column; gap: 2px; }
+    .pECG-stat-val { font-family: var(--font-mono); font-size: 18px; font-weight: 600; color: var(--fg-1); letter-spacing: -0.02em; }
+    .pECG-stat-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg-3); }
+
+    .pStats { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); background: rgba(15,15,20,0.6); backdrop-filter: blur(10px); }
+    .pStats-inner { max-width: var(--max-width); margin: 0 auto; padding: 0 var(--gutter); display: flex; }
+    .pStat { flex: 1; padding: var(--s-5) var(--s-4); border-right: 1px solid var(--border); opacity: 0; transform: translateY(10px); transition: opacity 0.5s var(--ease), transform 0.5s var(--ease); }
+    .pStat:last-child { border-right: 0; }
+    .pStat.on { opacity: 1; transform: translateY(0); }
+    .pStat-val { font-size: 26px; font-weight: 600; letter-spacing: -0.025em; line-height: 1; margin-bottom: 5px; color: var(--cyan); }
+    .pStat-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg-3); }
+
+    .pSection { border-top: 1px solid var(--border); }
+    .pSection-inner { max-width: var(--max-width); margin: 0 auto; padding: var(--s-9) var(--gutter); display: grid; grid-template-columns: 220px 1fr; gap: var(--s-9); align-items: start; }
+    .pSection-label { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-3); position: sticky; top: 80px; display: flex; align-items: center; gap: 10px; }
+    .pSection-label::before { content: ""; width: 16px; height: 1px; background: var(--cyan); flex-shrink: 0; }
+    .pSection-body { display: flex; flex-direction: column; gap: var(--s-6); }
+    .pSection-title { font-size: 38px; line-height: 44px; font-weight: 600; letter-spacing: -0.025em; color: var(--fg-1); margin: 0; }
+    .pSection-text { font-size: 15px; line-height: 24px; color: var(--fg-2); margin: 0; }
+
+    .pSpecs { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--border); border-radius: var(--r-2); overflow: hidden; }
+    .pSpec { display: grid; grid-template-columns: 180px 1fr; gap: var(--s-4); padding: var(--s-3) var(--s-4); border-bottom: 1px solid var(--border); }
+    .pSpec:last-child { border-bottom: none; }
+    .pSpec dt { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.04em; color: var(--fg-3); }
+    .pSpec dd { font-size: 13px; color: var(--fg-2); }
+
+    .pFeatures { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4); }
+    .pFeature { background: var(--bg-1); border: 1px solid var(--border); border-radius: var(--r-3); padding: var(--s-5); display: flex; flex-direction: column; gap: var(--s-2); transition: border-color var(--motion) var(--ease); }
+    .pFeature:hover { border-color: var(--border-strong); }
+    .pFeature-name { font-size: 14px; font-weight: 600; color: var(--fg-1); }
+    .pFeature-desc { font-size: 13px; line-height: 20px; color: var(--fg-2); }
+
+    .pChips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .pChip { font-family: var(--font-mono); font-size: 11px; padding: 5px 11px; border: 1px solid var(--border); border-radius: var(--r-1); color: var(--fg-3); transition: border-color 0.2s, color 0.2s; }
+    .pChip:hover { border-color: var(--cyan); color: var(--cyan); }
+
+    .pResults { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--s-4); }
+    .pResult { background: var(--bg-1); border: 1px solid var(--border); border-radius: var(--r-2); padding: var(--s-5); }
+    .pResult-val { font-size: 36px; font-weight: 700; letter-spacing: -0.04em; color: var(--cyan); line-height: 1; margin-bottom: var(--s-2); }
+    .pResult-label { font-size: 13px; line-height: 20px; color: var(--fg-2); }
+
+    /* Pipeline visual */
+    .pPipeline { display: flex; gap: 0; overflow: hidden; border-radius: var(--r-2); border: 1px solid var(--border); }
+    .pPipeStep { flex: 1; padding: var(--s-4) var(--s-3); border-right: 1px solid var(--border); text-align: center; }
+    .pPipeStep:last-child { border-right: 0; }
+    .pPipeStep-name { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-3); margin-bottom: 4px; }
+    .pPipeStep-val { font-size: 13px; font-weight: 600; color: var(--fg-1); }
+
+    .pNext { border-top: 1px solid var(--border); }
+    .pNext-inner { max-width: var(--max-width); margin: 0 auto; padding: var(--s-8) var(--gutter); display: flex; align-items: center; justify-content: space-between; }
+    .pNext-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-3); margin-bottom: 6px; }
+    .pNext-link { display: flex; align-items: center; gap: 12px; font-size: 28px; font-weight: 700; letter-spacing: -0.03em; color: var(--fg-1); text-decoration: none; transition: color 0.2s; }
+    .pNext-link:hover { color: var(--cyan); }
+
+    .pFooter { max-width: var(--max-width); margin: 0 auto; padding: var(--s-5) var(--gutter); display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--border); font-family: var(--font-mono); font-size: 11px; color: var(--fg-3); }
+
+    @media (max-width: 960px) {
+      .pHero-inner { grid-template-columns: 1fr; }
+      .pHero-right { display: none; }
+      .pSection-inner { grid-template-columns: 1fr; gap: var(--s-6); }
+      .pSection-label { position: static; }
+      .pStats-inner { flex-wrap: wrap; }
+      .pStat { flex: 1 1 45%; }
+      .pFeatures { grid-template-columns: 1fr; }
+      .pResults { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="pProgress" id="pProgress"></div>
+  <div class="pMouseGlow" id="pMouseGlow"></div>
+
+  <!-- NAV -->
+  <nav class="pNav" id="pNav">
+    <div class="pNav-inner">
+      <a href="../index.html" class="pNav-brand">
+        <img src="../../../assets/logo.png" alt="" class="pNav-brand-logo" />
+        Tom Huyghe
+      </a>
+      <div class="pNav-links">
+        <a href="../index.html#work" data-i18n="nav.work">Work</a>
+        <a href="../index.html#skills" data-i18n="nav.skills">Skills</a>
+        <a href="../index.html#about" data-i18n="nav.about">About</a>
+        <a href="../index.html#contact" data-i18n="nav.contact">Contact</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="pHero">
+    <div class="pHero-bg">
+      <div class="pHero-texture"></div>
+      <div class="pHero-veil"></div>
+      <div class="pHero-ambient"></div>
+    </div>
+    <div class="pHero-inner">
+      <div class="pHero-left">
+        <div class="pHero-eyebrow rv" id="rv0" data-i18n="hero.eyebrow">DESKTOP · 2025 · QT/QML</div>
+        <h1 class="pHero-title rv" id="rv1">PHYSIO<br /><span>VIEWER</span></h1>
+        <p class="pHero-sub rv" id="rv2" data-i18n="hero.sub">
+          Qt/QML desktop application for real-time physiological data visualization from the PULSAR connected wearable — live ECG & PPG curves, USB data extraction, and AWS cloud synchronization.
+        </p>
+        <div class="pHero-badge rv" id="rv3" data-i18n="hero.badge">
+          <span style="width:6px;height:6px;border-radius:50%;background:var(--success);flex-shrink:0"></span>
+          PULSAR companion · Clinical use
+        </div>
+      </div>
+      <div class="pHero-right rv-right" id="rv4">
+        <div class="pHero-signal">
+          <div class="pECG-wrap">
+            <div class="pECG-label">
+              <span class="pECG-dot"></span>
+              ECG — Live feed
+            </div>
+            <svg class="pECG-svg" viewBox="0 0 380 80" preserveAspectRatio="none">
+              <polyline class="pECG-line"
+                points="0,40 30,40 40,40 45,10 50,70 55,40 70,40 90,40 95,20 100,60 105,40 120,40 150,40 155,10 160,70 165,40 180,40 210,40 215,10 220,70 225,40 240,40 270,40 275,20 280,60 285,40 300,40 330,40 335,10 340,70 345,40 360,40 380,40"
+              />
+            </svg>
+            <div class="pECG-meta">
+              <div class="pECG-stat"><div class="pECG-stat-val">72</div><div class="pECG-stat-label">BPM</div></div>
+              <div class="pECG-stat"><div class="pECG-stat-val">98%</div><div class="pECG-stat-label">SpO2</div></div>
+              <div class="pECG-stat"><div class="pECG-stat-val">USB</div><div class="pECG-stat-label">Source</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS BAR -->
+  <div class="pStats">
+    <div class="pStats-inner">
+      <div class="pStat" id="st0"><div class="pStat-val">RT</div><div class="pStat-label" data-i18n="stat.0">Real-time curves</div></div>
+      <div class="pStat" id="st1"><div class="pStat-val" data-target="2">2</div><div class="pStat-label" data-i18n="stat.1">Data sources — USB + AWS</div></div>
+      <div class="pStat" id="st2"><div class="pStat-val">ECG</div><div class="pStat-label" data-i18n="stat.2">+ PPG signals</div></div>
+      <div class="pStat" id="st3"><div class="pStat-val">Qt6</div><div class="pStat-label" data-i18n="stat.3">C++ / QML</div></div>
+      <div class="pStat" id="st4"><div class="pStat-val">CSV</div><div class="pStat-label" data-i18n="stat.4">Export format</div></div>
+    </div>
+  </div>
+
+  <!-- CONTEXT -->
+  <section class="pSection">
+    <div class="pSection-inner">
+      <div class="pSection-label rv-left" data-i18n="ctx.label">Context</div>
+      <div class="pSection-body">
+        <h2 class="pSection-title rv" data-i18n="ctx.title">Clinical data is useless without visualization.</h2>
+        <p class="pSection-text rv" data-i18n="ctx.body1">
+          The PULSAR wearable captures continuous ECG and PPG data from patients during clinical trials. But raw binary data stored on an SD card or uploaded to AWS has no value until a clinician can see it, validate it, and export it.
+        </p>
+        <p class="pSection-text rv" data-i18n="ctx.body2">
+          PHYSIO VIEWER is a <strong style="color:var(--fg-1)">Qt/QML desktop application</strong> built to give clinicians and engineers a real-time visualization interface for PULSAR data. It connects directly to the device via USB for live extraction, or pulls stored sessions from AWS for retrospective analysis — and exports everything to CSV.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="pSection">
+    <div class="pSection-inner">
+      <div class="pSection-label rv-left" data-i18n="feat.label">Features</div>
+      <div class="pSection-body">
+        <h2 class="pSection-title rv" data-i18n="feat.title">Real-time curves. Dual source. Full export.</h2>
+        <div class="pFeatures rv-scale">
+          <div class="pFeature">
+            <div class="pFeature-name" data-i18n="feat.0.name">Real-time ECG / PPG</div>
+            <div class="pFeature-desc" data-i18n="feat.0.desc">Live scrolling curves of ECG and PPG signals from the PULSAR device — rendered in QML with hardware acceleration. Configurable time window and amplitude scale.</div>
+          </div>
+          <div class="pFeature">
+            <div class="pFeature-name" data-i18n="feat.1.name">USB extraction</div>
+            <div class="pFeature-desc" data-i18n="feat.1.desc">Direct connection to the PULSAR device via USB. Streams live data or extracts recorded sessions from the onboard SD card in seconds.</div>
+          </div>
+          <div class="pFeature">
+            <div class="pFeature-name" data-i18n="feat.2.name">AWS cloud sync</div>
+            <div class="pFeature-desc" data-i18n="feat.2.desc">Pull any recorded session from AWS S3 for retrospective visualization. Authenticated access with session browser and timeline navigation.</div>
+          </div>
+          <div class="pFeature">
+            <div class="pFeature-name" data-i18n="feat.3.name">CSV export</div>
+            <div class="pFeature-desc" data-i18n="feat.3.desc">Export any session or time range as CSV — compatible with MATLAB, Python, and standard clinical analysis tools.</div>
+          </div>
+          <div class="pFeature">
+            <div class="pFeature-name" data-i18n="feat.4.name">Multi-signal display</div>
+            <div class="pFeature-desc" data-i18n="feat.4.desc">Simultaneous visualization of multiple physiological signals — ECG, PPG (multi-wavelength), accelerometer — in synchronized panels.</div>
+          </div>
+          <div class="pFeature">
+            <div class="pFeature-name" data-i18n="feat.5.name">Clinical annotations</div>
+            <div class="pFeature-desc" data-i18n="feat.5.desc">Add timestamped annotations directly on the signal timeline — events, observations, quality flags — saved with the session data.</div>
+          </div>
+        </div>
+        <div class="pChips rv">
+          <span class="pChip">Qt 6</span>
+          <span class="pChip">QML</span>
+          <span class="pChip">C++</span>
+          <span class="pChip">USB</span>
+          <span class="pChip">AWS S3</span>
+          <span class="pChip">ECG</span>
+          <span class="pChip">PPG</span>
+          <span class="pChip">CSV export</span>
+          <span class="pChip">PULSAR</span>
+          <span class="pChip">macOS / Windows</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ARCHITECTURE -->
+  <section class="pSection">
+    <div class="pSection-inner">
+      <div class="pSection-label rv-left" data-i18n="arch.label">Architecture</div>
+      <div class="pSection-body">
+        <h2 class="pSection-title rv" data-i18n="arch.title">Qt/QML + C++ backend. Two data sources.</h2>
+        <p class="pSection-text rv" data-i18n="arch.text">
+          The application follows a strict Qt MVC pattern — a C++ backend handles data acquisition (USB serial or AWS S3 SDK), signal processing, and file I/O, while a QML front-end renders the live curves and UI with hardware acceleration. The two layers communicate via Qt signals and properties.
+        </p>
+
+        <div class="pPipeline rv">
+          <div class="pPipeStep"><div class="pPipeStep-name">Source</div><div class="pPipeStep-val">USB / AWS</div></div>
+          <div class="pPipeStep"><div class="pPipeStep-name">C++ Core</div><div class="pPipeStep-val">Parsing</div></div>
+          <div class="pPipeStep"><div class="pPipeStep-name">Qt signals</div><div class="pPipeStep-val">Bridge</div></div>
+          <div class="pPipeStep"><div class="pPipeStep-name">QML</div><div class="pPipeStep-val">Render</div></div>
+          <div class="pPipeStep"><div class="pPipeStep-name">Export</div><div class="pPipeStep-val">CSV</div></div>
+        </div>
+
+        <dl class="pSpecs rv">
+          <div class="pSpec"><dt>Framework</dt><dd>Qt 6 / QML — C++ backend, QML rendering layer</dd></div>
+          <div class="pSpec"><dt>Rendering</dt><dd>QML Canvas + Qt Charts — hardware-accelerated signal curves</dd></div>
+          <div class="pSpec"><dt>USB source</dt><dd>Qt SerialPort — direct connection to PULSAR ESP32-S3 via CDC</dd></div>
+          <div class="pSpec"><dt>Cloud source</dt><dd>AWS SDK C++ — authenticated S3 session retrieval</dd></div>
+          <div class="pSpec"><dt>Signals</dt><dd>ECG · PPG (4 wavelengths) · Accelerometer · Derived HR/SpO2</dd></div>
+          <div class="pSpec"><dt>Export</dt><dd>CSV with configurable columns, timestamps, and metadata header</dd></div>
+          <div class="pSpec"><dt>Platforms</dt><dd>macOS · Windows (cross-compiled with Qt Creator)</dd></div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATUS -->
+  <section class="pSection">
+    <div class="pSection-inner">
+      <div class="pSection-label rv-left" data-i18n="val.label">Status</div>
+      <div class="pSection-body">
+        <h2 class="pSection-title rv" data-i18n="val.title">Built for clinical use. Validated with PULSAR data.</h2>
+        <p class="pSection-text rv" data-i18n="val.text">
+          Developed as part of the PULSAR clinical trial project at AGORANOV Paris. Used internally to validate signal quality and review patient recordings from the 50+ patient trial at Clinique Hartmann, Neuilly-sur-Seine.
+        </p>
+        <div class="pResults rv-scale">
+          <div class="pResult">
+            <div class="pResult-val">RT</div>
+            <div class="pResult-label" data-i18n="result.0">Real-time signal rendering — no perceptible lag</div>
+          </div>
+          <div class="pResult">
+            <div class="pResult-val" data-target="2">2</div>
+            <div class="pResult-label" data-i18n="result.1">Data sources — USB device + AWS cloud</div>
+          </div>
+          <div class="pResult">
+            <div class="pResult-val" data-target="50">50+</div>
+            <div class="pResult-label" data-i18n="result.2">Patient sessions reviewed with the tool</div>
+          </div>
+          <div class="pResult">
+            <div class="pResult-val" data-target="4">4</div>
+            <div class="pResult-label" data-i18n="result.3">PPG wavelengths visualized simultaneously</div>
+          </div>
+        </div>
+        <dl class="pSpecs rv">
+          <div class="pSpec"><dt>My role</dt><dd>Sole developer — Qt/QML architecture, USB integration, AWS SDK, UI design</dd></div>
+          <div class="pSpec"><dt>Project</dt><dd>PULSAR — cardiac wearable, AGORANOV Paris</dd></div>
+          <div class="pSpec"><dt>Used at</dt><dd>Clinique Hartmann, Neuilly-sur-Seine — ICU clinical trial</dd></div>
+          <div class="pSpec"><dt>Status</dt><dd>Internal tool — used throughout the PULSAR trial</dd></div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- NEXT PROJECT -->
+  <div class="pNext">
+    <div class="pNext-inner">
+      <div><div class="pNext-label" data-i18n="next.label">Next project</div></div>
+      <a href="sleepguard.html" class="pNext-link">
+        THE SLEEPGUARD
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+  </div>
+
+  <footer>
+    <div class="pFooter">
+      <span>© 2025 Tom Huyghe · Paris</span>
+      <a href="../index.html" style="color:var(--fg-3);text-decoration:none;font-family:var(--font-mono);font-size:11px">← Portfolio</a>
+    </div>
+  </footer>
+
+  <script>
+    const nav = document.getElementById("pNav");
+    window.addEventListener("scroll", () => { nav.classList.toggle("scrolled", window.scrollY > 24); }, { passive: true });
+    const progress = document.getElementById("pProgress");
+    window.addEventListener("scroll", () => { const d = document.documentElement.scrollHeight - window.innerHeight; progress.style.width = (d > 0 ? (window.scrollY / d) * 100 : 0) + "%"; }, { passive: true });
+    const glow = document.getElementById("pMouseGlow");
+    let gv = false;
+    document.addEventListener("mousemove", e => { glow.style.left = e.clientX + "px"; glow.style.top = e.clientY + "px"; if (!gv) { glow.style.opacity = "1"; gv = true; } });
+    document.addEventListener("mouseleave", () => { glow.style.opacity = "0"; gv = false; });
+    ["rv0","rv1","rv2","rv3","rv4"].forEach((id, i) => { const el = document.getElementById(id); if (el) setTimeout(() => el.classList.add("on"), 180 + i * 130); });
+
+    function countUp(el) {
+      const target = parseFloat(el.dataset.target), suffix = el.dataset.suffix || "", dec = parseInt(el.dataset.decimal || 0);
+      let s = null;
+      const step = ts => { if (!s) s = ts; const p = Math.min((ts - s) / 1200, 1), val = target * p; el.textContent = (dec ? val.toFixed(dec) : Math.round(val)) + suffix; if (p < 1) requestAnimationFrame(step); };
+      requestAnimationFrame(step);
+    }
+    const statEls = [0,1,2,3,4].map(i => document.getElementById("st" + i));
+    const statsObs = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) { statEls.forEach((el, i) => { if (!el) return; setTimeout(() => { el.classList.add("on"); const v = el.querySelector("[data-target]"); if (v) countUp(v); }, i * 90); }); statsObs.disconnect(); } });
+    }, { threshold: 0.3 });
+    if (statEls[0]) statsObs.observe(statEls[0].parentElement);
+
+    const resultObs = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.querySelectorAll("[data-target]").forEach((el, i) => setTimeout(() => countUp(el), i * 120)); resultObs.unobserve(e.target); } });
+    }, { threshold: 0.2 });
+    document.querySelectorAll(".pResults").forEach(el => resultObs.observe(el));
+
+    const revealObs = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add("on"); revealObs.unobserve(e.target); } });
+    }, { threshold: 0.10 });
+    document.querySelectorAll(".rv, .rv-left, .rv-right, .rv-scale").forEach(el => { if (!el.id || !el.id.startsWith("rv")) revealObs.observe(el); });
+
+    const COPY = {
+      en: {
+        'hero.eyebrow':'DESKTOP · 2025 · QT/QML','hero.sub':'Qt/QML desktop application for real-time physiological data visualization from the PULSAR connected wearable — live ECG & PPG curves, USB data extraction, and AWS cloud synchronization.','hero.badge':'PULSAR companion · Clinical use',
+        'stat.0':'Real-time curves','stat.1':'Data sources — USB + AWS','stat.2':'+ PPG signals','stat.3':'C++ / QML','stat.4':'Export format',
+        'ctx.label':'Context','ctx.title':'Clinical data is useless without visualization.','ctx.body1':'The PULSAR wearable captures continuous ECG and PPG data from patients during clinical trials. But raw binary data stored on an SD card or uploaded to AWS has no value until a clinician can see it, validate it, and export it.','ctx.body2':'PHYSIO VIEWER is a <strong style="color:var(--fg-1)">Qt/QML desktop application</strong> built to give clinicians and engineers a real-time visualization interface for PULSAR data. It connects directly to the device via USB for live extraction, or pulls stored sessions from AWS for retrospective analysis.',
+        'feat.label':'Features','feat.title':'Real-time curves. Dual source. Full export.','feat.0.name':'Real-time ECG / PPG','feat.0.desc':'Live scrolling curves of ECG and PPG signals rendered in QML with hardware acceleration. Configurable time window and amplitude scale.','feat.1.name':'USB extraction','feat.1.desc':'Direct connection to the PULSAR device via USB. Streams live data or extracts recorded sessions from the onboard SD card.','feat.2.name':'AWS cloud sync','feat.2.desc':'Pull any recorded session from AWS S3 for retrospective visualization. Authenticated access with session browser.','feat.3.name':'CSV export','feat.3.desc':'Export any session or time range as CSV — compatible with MATLAB, Python, and standard clinical analysis tools.','feat.4.name':'Multi-signal display','feat.4.desc':'Simultaneous visualization of ECG, PPG (multi-wavelength), and accelerometer in synchronized panels.','feat.5.name':'Clinical annotations','feat.5.desc':'Add timestamped annotations on the signal timeline — events, observations, quality flags — saved with the session.',
+        'arch.label':'Architecture','arch.title':'Qt/QML + C++ backend. Two data sources.','arch.text':'C++ backend handles data acquisition (USB serial or AWS S3 SDK), signal processing, and file I/O. QML front-end renders live curves with hardware acceleration. They communicate via Qt signals and properties.',
+        'val.label':'Status','val.title':'Built for clinical use. Validated with PULSAR data.','val.text':'Developed as part of the PULSAR clinical trial project at AGORANOV Paris. Used internally to validate signal quality and review patient recordings from the 50+ patient trial at Clinique Hartmann.','result.0':'Real-time signal rendering — no perceptible lag','result.1':'Data sources — USB device + AWS cloud','result.2':'Patient sessions reviewed with the tool','result.3':'PPG wavelengths visualized simultaneously',
+        'next.label':'Next project','nav.work':'Work','nav.skills':'Skills','nav.about':'About','nav.contact':'Contact'
+      },
+      fr: {
+        'hero.eyebrow':'DESKTOP · 2025 · QT/QML','hero.sub':'Application desktop Qt/QML pour la visualisation temps réel de données physiologiques issues du wearable PULSAR — courbes ECG & PPG live, extraction USB, synchronisation cloud AWS.','hero.badge':'Compagnon PULSAR · Usage clinique',
+        'stat.0':'Courbes temps réel','stat.1':'Sources — USB + AWS','stat.2':'+ signaux PPG','stat.3':'C++ / QML','stat.4':'Format export',
+        'ctx.label':'Contexte','ctx.title':'Les données cliniques sont inutiles sans visualisation.','ctx.body1':'Le wearable PULSAR capture en continu des données ECG et PPG pendant les essais cliniques. Mais des données binaires brutes sur une carte SD ou uploadées sur AWS n\'ont aucune valeur tant qu\'un clinicien ne peut pas les voir, les valider et les exporter.','ctx.body2':'PHYSIO VIEWER est une <strong style="color:var(--fg-1)">application desktop Qt/QML</strong> conçue pour donner aux cliniciens et ingénieurs une interface de visualisation temps réel des données PULSAR. Elle se connecte directement au device via USB pour l\'extraction live, ou récupère les sessions stockées sur AWS pour l\'analyse rétrospective.',
+        'feat.label':'Fonctionnalités','feat.title':'Courbes temps réel. Double source. Export complet.','feat.0.name':'ECG / PPG temps réel','feat.0.desc':'Courbes défilantes live des signaux ECG et PPG rendues en QML avec accélération hardware. Fenêtre temporelle et échelle d\'amplitude configurables.','feat.1.name':'Extraction USB','feat.1.desc':'Connexion directe au device PULSAR via USB. Stream les données live ou extrait les sessions enregistrées depuis la carte SD embarquée.','feat.2.name':'Sync cloud AWS','feat.2.desc':'Récupérer n\'importe quelle session enregistrée depuis AWS S3 pour une visualisation rétrospective. Accès authentifié avec navigateur de sessions.','feat.3.name':'Export CSV','feat.3.desc':'Exporter n\'importe quelle session ou plage temporelle en CSV — compatible MATLAB, Python et outils d\'analyse clinique standard.','feat.4.name':'Affichage multi-signaux','feat.4.desc':'Visualisation simultanée de l\'ECG, du PPG (multi-longueurs d\'onde) et de l\'accéléromètre dans des panneaux synchronisés.','feat.5.name':'Annotations cliniques','feat.5.desc':'Ajouter des annotations horodatées sur la timeline des signaux — événements, observations, flags qualité — sauvegardées avec la session.',
+        'arch.label':'Architecture','arch.title':'Qt/QML + backend C++. Deux sources de données.','arch.text':'Le backend C++ gère l\'acquisition (USB série ou AWS S3 SDK), le traitement du signal et les E/S fichiers. Le front-end QML rend les courbes live avec accélération hardware. Ils communiquent via les signaux et propriétés Qt.',
+        'val.label':'Statut','val.title':'Conçu pour l\'usage clinique. Validé avec les données PULSAR.','val.text':'Développé dans le cadre du projet d\'essai clinique PULSAR à AGORANOV Paris. Utilisé en interne pour valider la qualité des signaux et revoir les enregistrements des 50+ patients à la Clinique Hartmann.','result.0':'Rendu des signaux temps réel — aucun lag perceptible','result.1':'Sources de données — device USB + cloud AWS','result.2':'Sessions patient relues avec l\'outil','result.3':'Longueurs d\'onde PPG visualisées simultanément',
+        'next.label':'Projet suivant','nav.work':'Projets','nav.skills':'Compétences','nav.about':'À propos','nav.contact':'Contact'
+      }
+    };
+
+    let lang = localStorage.getItem("th-lang") || "en";
+    function applyLang() { document.querySelectorAll("[data-i18n]").forEach(el => { const k = el.dataset.i18n, v = COPY[lang][k]; if (v) el.innerHTML = v; }); }
+    applyLang();
+    window.addEventListener("storage", e => { if (e.key === "th-lang") { lang = e.newValue || "en"; applyLang(); } });
+  </script>
+</body>
+</html>

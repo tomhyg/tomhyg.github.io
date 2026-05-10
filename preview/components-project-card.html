@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Project card</title>
+<link rel="stylesheet" href="_card.css">
+<style>
+  .pcard{background:var(--bg-1);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;cursor:pointer;transition:border-color 220ms cubic-bezier(0.2,0.7,0.2,1);}
+  .pcard:hover{border-color:var(--border-strong);}
+  .pcard-img{height:140px;background:#0a0a10 url('../assets/texture-cyan.jpg') center/cover;position:relative;}
+  .pcard-img::after{content:"";position:absolute;inset:0;background:#0a0a10;mix-blend-mode:multiply;opacity:0.55;}
+  .pcard-meta{font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--fg-3);font-weight:500;}
+  .pcard-body{padding:16px 18px 18px;display:flex;flex-direction:column;gap:8px;}
+  .pcard-title{font-family:var(--font-sans);font-size:20px;line-height:26px;font-weight:600;color:var(--fg-1);}
+  .pcard-summary{font-family:var(--font-sans);font-size:14px;line-height:21px;color:var(--fg-2);}
+  .pcard-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;}
+  .ptag{font-family:var(--font-mono);font-size:10px;padding:4px 8px;border:1px solid var(--border);border-radius:999px;color:var(--fg-3);}
+</style></head>
+<body><div class="card">
+  <div class="eyebrow">Project card</div>
+  <div style="width:380px;">
+    <div class="pcard">
+      <div class="pcard-img"></div>
+      <div class="pcard-body">
+        <div class="row" style="justify-content:space-between;align-items:baseline;">
+          <div class="pcard-meta">EMBEDDED · 2024</div>
+          <div class="pcard-meta" style="color:var(--success);">● SHIPPED</div>
+        </div>
+        <div class="pcard-title">PULSAR</div>
+        <div class="pcard-summary">Cardiac wearable. ESP32-S3 firmware, AWS IoT pipeline, validated on 50+ patients.</div>
+        <div class="pcard-tags">
+          <span class="ptag">ESP32-S3</span><span class="ptag">FreeRTOS</span><span class="ptag">IEC 62304</span><span class="ptag">AWS IoT</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="label-mono">bg-1 · hairline · 12-radius · texture hero @ low opacity · meta · title · summary · tag stack</div>
+</div></body></html>

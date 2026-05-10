@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Tag chips</title>
+<link rel="stylesheet" href="_card.css">
+<style>
+  .chip{font-family:var(--font-mono);font-size:11px;line-height:1;letter-spacing:0.04em;padding:6px 10px;border-radius:999px;border:1px solid var(--border);color:var(--fg-2);background:var(--bg-1);display:inline-flex;align-items:center;gap:6px;}
+  .chip.dot::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;}
+  .chip-success{color:var(--success);border-color:rgba(63,209,141,0.25);background:rgba(63,209,141,0.08);}
+  .chip-warn{color:var(--warn);border-color:rgba(255,180,84,0.25);background:rgba(255,180,84,0.08);}
+  .chip-accent{color:var(--accent-soft);border-color:rgba(124,92,255,0.3);background:rgba(124,92,255,0.08);}
+</style></head>
+<body><div class="card">
+  <div class="eyebrow">Tag chips · tech tags + status badges</div>
+  <div class="row" style="gap:8px;flex-wrap:wrap;">
+    <span class="chip">ESP32-S3</span>
+    <span class="chip">FreeRTOS</span>
+    <span class="chip">IEC 62304</span>
+    <span class="chip">React</span>
+    <span class="chip">Firebase</span>
+    <span class="chip">TensorFlow Lite</span>
+  </div>
+  <div class="row" style="gap:8px;flex-wrap:wrap;">
+    <span class="chip chip-success dot">Shipped — clinical</span>
+    <span class="chip chip-warn dot">In progress</span>
+    <span class="chip chip-accent dot">Featured</span>
+  </div>
+  <div class="label-mono">mono 11 · pill · hairline border · monochrome by default; semantic for status only</div>
+</div></body></html>

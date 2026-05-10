@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 150" width="400" height="150" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <style>
+      @keyframes fadeIn   { from{opacity:0;} to{opacity:1;} }
+      @keyframes drawWave { from{stroke-dashoffset:130;} to{stroke-dashoffset:0;} }
+      @keyframes blinkDot { 0%,100%{opacity:1;} 50%{opacity:0.08;} }
+      @keyframes glow     { 0%,100%{opacity:0.25;} 50%{opacity:0.55;} }
+      .wave { stroke-dasharray:130; animation: drawWave 1.6s 0.5s both ease-out; }
+      .d1   { animation: fadeIn 0.4s 1.8s both; }
+      .d2   { animation: fadeIn 0.4s 2.1s both; }
+      .d3   { animation: fadeIn 0.4s 2.4s both; }
+      .dot  { animation: blinkDot 1.2s ease-in-out infinite; }
+      .ring { animation: glow 3s ease-in-out infinite; }
+    </style>
+    <radialGradient id="wglow" cx="50%" cy="50%">
+      <stop offset="0%"   stop-color="#7B8FE8" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#07070B" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="oclip">
+      <rect x="163" y="30" width="74" height="88" rx="4"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background -->
+  <rect width="400" height="150" fill="#07070B"/>
+
+  <!-- Glow behind watch -->
+  <ellipse cx="200" cy="75" rx="80" ry="60" fill="url(#wglow)" class="ring"/>
+
+  <!-- ── WATCH BAND LEFT ── -->
+  <rect x="0"   y="56" width="158" height="38" rx="8" fill="#0F0F14"/>
+  <line x1="4"  y1="64" x2="155" y2="64" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+  <line x1="4"  y1="86" x2="155" y2="86" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+  <!-- Band holes -->
+  <circle cx="20" cy="75" r="2.5" fill="#07070B" opacity="0.8"/>
+  <circle cx="36" cy="75" r="2.5" fill="#07070B" opacity="0.8"/>
+  <circle cx="52" cy="75" r="2.5" fill="#07070B" opacity="0.8"/>
+
+  <!-- ── WATCH BAND RIGHT ── -->
+  <rect x="242" y="56" width="158" height="38" rx="8" fill="#0F0F14"/>
+  <line x1="245" y1="64" x2="396" y2="64" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+  <line x1="245" y1="86" x2="396" y2="86" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+  <!-- Clasp hint -->
+  <rect x="348" y="68" width="16" height="14" rx="3" fill="#1A1A22" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <line x1="356" y1="68" x2="356" y2="82" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+
+  <!-- ── WATCH BODY ── -->
+  <rect x="152" y="8" width="96" height="134" rx="22" fill="#141418" stroke="rgba(123,143,232,0.22)" stroke-width="1.5"/>
+  <rect x="156" y="12" width="88" height="126" rx="19" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <!-- Crown button -->
+  <rect x="246" y="58" width="6" height="18" rx="3" fill="#1C1C24" stroke="rgba(123,143,232,0.15)" stroke-width="1"/>
+
+  <!-- ── OLED DISPLAY ── -->
+  <rect x="163" y="30" width="74" height="88" rx="5" fill="#04040A"/>
+  <rect x="163" y="30" width="74" height="88" rx="5" fill="none" stroke="rgba(123,143,232,0.12)" stroke-width="1"/>
+
+  <!-- OLED content -->
+  <g clip-path="url(#oclip)">
+    <!-- Title -->
+    <text x="200" y="42" text-anchor="middle" font-family="ui-monospace,monospace" font-size="6" fill="rgba(123,143,232,0.55)" letter-spacing="0.5">TheSleepGuard</text>
+
+    <!-- Phase grid lines -->
+    <line x1="163" y1="50" x2="237" y2="50" stroke="rgba(255,255,255,0.025)" stroke-width="0.5"/>
+    <line x1="163" y1="58" x2="237" y2="58" stroke="rgba(255,255,255,0.025)" stroke-width="0.5"/>
+    <line x1="163" y1="66" x2="237" y2="66" stroke="rgba(255,255,255,0.025)" stroke-width="0.5"/>
+    <!-- Phase labels -->
+    <text x="166" y="50" font-family="monospace" font-size="4" fill="#ff999944">W</text>
+    <text x="166" y="58" font-family="monospace" font-size="4" fill="#7B8FE844">R</text>
+    <text x="166" y="66" font-family="monospace" font-size="4" fill="#99ccff44">L</text>
+    <text x="166" y="74" font-family="monospace" font-size="4" fill="#6688ee44">D</text>
+
+    <!-- Sleep waveform -->
+    <polyline class="wave"
+      points="172,48 174,48 175,50 176,53 177,56 178,59 180,59 181,56 182,53 183,50 184,48 187,48 188,51 189,55 190,59 192,59 193,55 194,52 195,50 198,48 200,51 201,54 202,58 204,58 205,54 206,52 207,50 209,48 213,48"
+      stroke="#7B8FE8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+
+    <!-- Divider -->
+    <line x1="167" y1="78" x2="233" y2="78" stroke="rgba(123,143,232,0.1)" stroke-width="0.5"/>
+
+    <!-- BPM -->
+    <text x="200" y="95"  text-anchor="middle" font-family="ui-monospace,monospace" font-size="20" font-weight="bold" fill="#7B8FE8">58</text>
+    <text x="200" y="104" text-anchor="middle" font-family="ui-monospace,monospace" font-size="5"  fill="rgba(123,143,232,0.5)" letter-spacing="1.5">BPM</text>
+    <circle cx="214" cy="87" r="2.5" fill="#7B8FE8" class="dot"/>
+    <text x="214" y="100" text-anchor="middle" font-family="ui-monospace,monospace" font-size="4.5" fill="rgba(123,143,232,0.45)">REM</text>
+
+    <!-- Phase mini indicators -->
+    <g class="d1">
+      <rect x="167" y="108" width="5"  height="3" rx="1" fill="#ff9999" opacity="0.55"/>
+      <rect x="174" y="108" width="8"  height="3" rx="1" fill="#7B8FE8" opacity="0.65"/>
+      <rect x="184" y="108" width="18" height="3" rx="1" fill="#99ccff" opacity="0.45"/>
+      <rect x="204" y="108" width="11" height="3" rx="1" fill="#6688ee" opacity="0.55"/>
+    </g>
+    <g class="d2">
+      <text x="167" y="116" font-family="ui-monospace,monospace" font-size="4" fill="rgba(255,153,153,0.5)">W</text>
+      <text x="174" y="116" font-family="ui-monospace,monospace" font-size="4" fill="rgba(123,143,232,0.6)">REM</text>
+      <text x="184" y="116" font-family="ui-monospace,monospace" font-size="4" fill="rgba(153,204,255,0.45)">LIGHT</text>
+      <text x="204" y="116" font-family="ui-monospace,monospace" font-size="4" fill="rgba(102,136,238,0.5)">DEEP</text>
+    </g>
+  </g>
+</svg>

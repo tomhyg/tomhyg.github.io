@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 150" width="400" height="150" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <style>
+      @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+      @keyframes pulseDot { 0%,100%{opacity:1;} 50%{opacity:0.15;} }
+      @keyframes pulseBox { 0%,100%{opacity:0.25;} 50%{opacity:0.6;} }
+      @keyframes drawCorner { from{stroke-dashoffset:28;} to{stroke-dashoffset:0;} }
+      .sil   { animation: fadeIn 0.6s 0.4s both; }
+      .c-tl  { animation: drawCorner 0.3s 0.9s  both ease-out; stroke-dasharray:28; }
+      .c-tr  { animation: drawCorner 0.3s 1.1s  both ease-out; stroke-dasharray:28; }
+      .c-bl  { animation: drawCorner 0.3s 1.3s  both ease-out; stroke-dasharray:28; }
+      .c-br  { animation: drawCorner 0.3s 1.5s  both ease-out; stroke-dasharray:28; }
+      .conf  { animation: fadeIn 0.35s 1.6s both; }
+      .box   { animation: pulseBox 2.8s 1.7s ease-in-out infinite; }
+      .dot   { animation: pulseDot 1.1s ease-in-out infinite; }
+      .d1    { animation: fadeIn 0.4s 0.2s both; }
+      .d2    { animation: fadeIn 0.4s 0.5s both; }
+      .d3    { animation: fadeIn 0.4s 0.8s both; }
+      .d4    { animation: fadeIn 0.4s 1.1s both; }
+      .d5    { animation: fadeIn 0.4s 1.4s both; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="400" height="150" fill="#07070B"/>
+
+  <!-- Camera view tint -->
+  <rect width="268" height="150" fill="rgba(245,158,11,0.015)"/>
+
+  <!-- Grid -->
+  <line x1="0"   y1="37"  x2="268" y2="37"  stroke="rgba(245,158,11,0.07)" stroke-width="1"/>
+  <line x1="0"   y1="75"  x2="268" y2="75"  stroke="rgba(245,158,11,0.07)" stroke-width="1"/>
+  <line x1="0"   y1="113" x2="268" y2="113" stroke="rgba(245,158,11,0.07)" stroke-width="1"/>
+  <line x1="67"  y1="0"   x2="67"  y2="150" stroke="rgba(245,158,11,0.07)" stroke-width="1"/>
+  <line x1="134" y1="0"   x2="134" y2="150" stroke="rgba(245,158,11,0.07)" stroke-width="1"/>
+  <line x1="201" y1="0"   x2="201" y2="150" stroke="rgba(245,158,11,0.07)" stroke-width="1"/>
+
+  <!-- Scan line (SMIL, top → bottom loop) -->
+  <rect x="0" y="0" width="268" height="2" fill="rgba(245,158,11,0.28)">
+    <animateTransform attributeName="transform" type="translate" from="0,0" to="0,155" dur="2.8s" repeatCount="indefinite" begin="0.5s"/>
+  </rect>
+
+  <!-- Baby silhouette -->
+  <g class="sil">
+    <ellipse cx="134" cy="63" rx="19" ry="19" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.16)" stroke-width="1"/>
+    <ellipse cx="134" cy="102" rx="21" ry="27" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.10)" stroke-width="1"/>
+  </g>
+
+  <!-- Bounding box (subtle full rect, pulsing) -->
+  <rect x="104" y="36" width="60" height="102" rx="2" fill="none" stroke="rgba(245,158,11,0.3)" stroke-width="1" class="box"/>
+
+  <!-- Corner markers -->
+  <path d="M104 50 L104 36 L118 36" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" class="c-tl"/>
+  <path d="M150 36 L164 36 L164 50" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" class="c-tr"/>
+  <path d="M104 124 L104 138 L118 138" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" class="c-bl"/>
+  <path d="M150 138 L164 138 L164 124" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" class="c-br"/>
+
+  <!-- Confidence label -->
+  <g class="conf">
+    <rect x="104" y="22" width="54" height="15" rx="2" fill="rgba(245,158,11,0.15)" stroke="rgba(245,158,11,0.4)" stroke-width="1"/>
+    <text x="131" y="33" text-anchor="middle" font-family="ui-monospace,monospace" font-size="8" fill="#F59E0B">98.2%</text>
+  </g>
+
+  <!-- Divider -->
+  <line x1="272" y1="0" x2="272" y2="150" stroke="rgba(245,158,11,0.1)" stroke-width="1"/>
+
+  <!-- Right panel data -->
+  <g class="d1">
+    <circle cx="286" cy="24" r="4" fill="#F59E0B" class="dot"/>
+    <text x="296" y="28"  font-family="ui-monospace,monospace" font-size="8" fill="#F59E0B">LIVE</text>
+    <text x="390" y="28"  text-anchor="end" font-family="ui-monospace,monospace" font-size="7" fill="rgba(245,158,11,0.45)">BLE ●●●●</text>
+  </g>
+  <g class="d2">
+    <text x="282" y="56"  font-family="ui-monospace,monospace" font-size="7" fill="rgba(255,255,255,0.28)">INFERENCE</text>
+    <text x="390" y="56"  text-anchor="end" font-family="ui-monospace,monospace" font-size="8" fill="rgba(245,158,11,0.85)">47 ms</text>
+  </g>
+  <g class="d3">
+    <text x="282" y="80"  font-family="ui-monospace,monospace" font-size="7" fill="rgba(255,255,255,0.28)">FRAMERATE</text>
+    <text x="390" y="80"  text-anchor="end" font-family="ui-monospace,monospace" font-size="8" fill="rgba(245,158,11,0.85)">10 FPS</text>
+  </g>
+  <g class="d4">
+    <text x="282" y="104" font-family="ui-monospace,monospace" font-size="7" fill="rgba(255,255,255,0.28)">MODEL</text>
+    <text x="390" y="104" text-anchor="end" font-family="ui-monospace,monospace" font-size="8" fill="rgba(245,158,11,0.85)">TFLite</text>
+  </g>
+  <g class="d5">
+    <text x="282" y="128" font-family="ui-monospace,monospace" font-size="7" fill="rgba(255,255,255,0.28)">LATENCY</text>
+    <text x="390" y="128" text-anchor="end" font-family="ui-monospace,monospace" font-size="8" fill="rgba(245,158,11,0.6)">&lt; 50 ms</text>
+  </g>
+</svg>

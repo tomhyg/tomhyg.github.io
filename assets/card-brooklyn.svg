@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 150" width="400" height="150" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <style>
+      @keyframes fadeInLeft {
+        from { opacity: 0; transform: translateX(-8px); }
+        to   { opacity: 1; transform: translateX(0); }
+      }
+      @keyframes fadeInRight {
+        from { opacity: 0; transform: translateX(8px); }
+        to   { opacity: 1; transform: translateX(0); }
+      }
+      @keyframes pulseOpacity {
+        0%, 100% { opacity: 0.3; }
+        50%       { opacity: 0.9; }
+      }
+      @keyframes march {
+        to { stroke-dashoffset: -42; }
+      }
+      .doc1 { animation: fadeInLeft 0.45s 0.1s  both ease-out; }
+      .doc2 { animation: fadeInLeft 0.45s 0.35s both ease-out; }
+      .doc3 { animation: fadeInLeft 0.45s 0.6s  both ease-out; }
+      .doc4 { animation: fadeInLeft 0.45s 0.85s both ease-out; }
+      .res1  { animation: fadeInRight 0.45s 1.3s  both ease-out; }
+      .res2  { animation: fadeInRight 0.45s 1.6s  both ease-out; }
+      .res3  { animation: fadeInRight 0.45s 1.9s  both ease-out; }
+      .ring-outer { animation: march 4s linear infinite; }
+      .ring-pulse  { animation: pulseOpacity 2.2s ease-in-out infinite; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="400" height="150" fill="#07070B"/>
+
+  <!-- Subtle column dividers -->
+  <line x1="134" y1="0" x2="134" y2="150" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <line x1="266" y1="0" x2="266" y2="150" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+
+  <!-- Section labels -->
+  <text x="67"  y="15" text-anchor="middle" font-family="ui-monospace,monospace" font-size="7" fill="rgba(255,255,255,0.22)" letter-spacing="2.5">SOURCES</text>
+  <text x="200" y="15" text-anchor="middle" font-family="ui-monospace,monospace" font-size="7" fill="rgba(232,112,58,0.65)" letter-spacing="2.5">GEMINI · RAG</text>
+  <text x="333" y="15" text-anchor="middle" font-family="ui-monospace,monospace" font-size="7" fill="rgba(255,255,255,0.22)" letter-spacing="2.5">MATCHES</text>
+
+  <!-- ════════ DOCUMENTS (left) ════════ -->
+  <g class="doc1">
+    <rect x="10" y="24" width="54" height="36" rx="3" fill="#0F0C0A" stroke="rgba(232,112,58,0.28)" stroke-width="1"/>
+    <rect x="17" y="31" width="34" height="2" rx="1" fill="rgba(255,255,255,0.15)"/>
+    <rect x="17" y="36" width="26" height="2" rx="1" fill="rgba(255,255,255,0.08)"/>
+    <rect x="17" y="41" width="30" height="2" rx="1" fill="rgba(255,255,255,0.08)"/>
+    <rect x="17" y="46" width="22" height="2" rx="1" fill="rgba(232,112,58,0.55)"/>
+  </g>
+  <g class="doc2">
+    <rect x="72" y="24" width="54" height="36" rx="3" fill="#0F0C0A" stroke="rgba(232,112,58,0.28)" stroke-width="1"/>
+    <rect x="79" y="31" width="28" height="2" rx="1" fill="rgba(232,112,58,0.55)"/>
+    <rect x="79" y="36" width="36" height="2" rx="1" fill="rgba(255,255,255,0.08)"/>
+    <rect x="79" y="41" width="22" height="2" rx="1" fill="rgba(255,255,255,0.15)"/>
+    <rect x="79" y="46" width="32" height="2" rx="1" fill="rgba(255,255,255,0.08)"/>
+  </g>
+  <g class="doc3">
+    <rect x="10" y="72" width="54" height="36" rx="3" fill="#0F0C0A" stroke="rgba(232,112,58,0.28)" stroke-width="1"/>
+    <rect x="17" y="79" width="30" height="2" rx="1" fill="rgba(255,255,255,0.08)"/>
+    <rect x="17" y="84" width="36" height="2" rx="1" fill="rgba(255,255,255,0.15)"/>
+    <rect x="17" y="89" width="22" height="2" rx="1" fill="rgba(232,112,58,0.55)"/>
+    <rect x="17" y="94" width="28" height="2" rx="1" fill="rgba(255,255,255,0.08)"/>
+  </g>
+  <g class="doc4">
+    <rect x="72" y="72" width="54" height="36" rx="3" fill="#0F0C0A" stroke="rgba(232,112,58,0.28)" stroke-width="1"/>
+    <rect x="79" y="79" width="34" height="2" rx="1" fill="rgba(255,255,255,0.15)"/>
+    <rect x="79" y="84" width="22" height="2" rx="1" fill="rgba(255,255,255,0.08)"/>
+    <rect x="79" y="89" width="30" height="2" rx="1" fill="rgba(255,255,255,0.08)"/>
+    <rect x="79" y="94" width="24" height="2" rx="1" fill="rgba(232,112,58,0.55)"/>
+  </g>
+
+  <!-- ════════ PATHS left → center ════════ -->
+  <path id="p-l1" d="M126 42 C153 42 164 68 182 73" fill="none" stroke="rgba(232,112,58,0.2)" stroke-width="1" stroke-dasharray="3 5"/>
+  <path id="p-l2" d="M126 90 C153 90 164 84 182 79" fill="none" stroke="rgba(232,112,58,0.2)" stroke-width="1" stroke-dasharray="3 5"/>
+
+  <circle r="2.5" fill="#E8703A">
+    <animateMotion dur="1.8s" repeatCount="indefinite" begin="0.9s"><mpath href="#p-l1"/></animateMotion>
+  </circle>
+  <circle r="2.5" fill="#E8703A" opacity="0.7">
+    <animateMotion dur="1.8s" repeatCount="indefinite" begin="1.7s"><mpath href="#p-l2"/></animateMotion>
+  </circle>
+
+  <!-- ════════ AI NODE (center) ════════ -->
+  <circle cx="200" cy="76" r="31" fill="none" stroke="rgba(232,112,58,0.18)" stroke-width="1" stroke-dasharray="6 8" class="ring-outer"/>
+  <circle cx="200" cy="76" r="22" fill="none" stroke="rgba(232,112,58,0.5)"  stroke-width="1" class="ring-pulse"/>
+  <circle cx="200" cy="76" r="15" fill="rgba(232,112,58,0.1)" stroke="rgba(232,112,58,0.85)" stroke-width="1.5"/>
+  <text x="200" y="73" text-anchor="middle" font-family="ui-monospace,monospace" font-size="11" fill="#F5A472" font-weight="bold">AI</text>
+  <text x="200" y="84" text-anchor="middle" font-family="ui-monospace,monospace" font-size="6"  fill="rgba(245,164,114,0.6)" letter-spacing="2">RAG</text>
+
+  <!-- ════════ PATHS center → right ════════ -->
+  <path id="p-r1" d="M218 71 C240 65 252 42 272 42"  fill="none" stroke="rgba(232,112,58,0.2)" stroke-width="1" stroke-dasharray="3 5"/>
+  <path id="p-r2" d="M218 76 C240 76 252 76 272 76"  fill="none" stroke="rgba(232,112,58,0.2)" stroke-width="1" stroke-dasharray="3 5"/>
+  <path id="p-r3" d="M218 81 C240 88 252 108 272 108" fill="none" stroke="rgba(232,112,58,0.2)" stroke-width="1" stroke-dasharray="3 5"/>
+
+  <circle r="2.5" fill="#F5A472">
+    <animateMotion dur="1.6s" repeatCount="indefinite" begin="1.2s"><mpath href="#p-r1"/></animateMotion>
+  </circle>
+  <circle r="2.5" fill="#F5A472" opacity="0.75">
+    <animateMotion dur="1.6s" repeatCount="indefinite" begin="1.9s"><mpath href="#p-r2"/></animateMotion>
+  </circle>
+  <circle r="2.5" fill="#F5A472" opacity="0.55">
+    <animateMotion dur="1.6s" repeatCount="indefinite" begin="2.6s"><mpath href="#p-r3"/></animateMotion>
+  </circle>
+
+  <!-- ════════ RESULTS (right) ════════ -->
+  <!-- 94% -->
+  <g class="res1">
+    <rect x="272" y="24" width="118" height="32" rx="3" fill="#0F0C0A" stroke="rgba(232,112,58,0.45)" stroke-width="1"/>
+    <text x="280" y="37" font-family="ui-monospace,monospace" font-size="8" fill="rgba(255,255,255,0.72)">Sarah Mitchell</text>
+    <rect x="280" y="43" width="84" height="2.5" rx="1.25" fill="rgba(255,255,255,0.07)"/>
+    <rect x="280" y="43" width="0"   height="2.5" rx="1.25" fill="#E8703A">
+      <animate attributeName="width" from="0" to="79" dur="0.7s" begin="1.5s" fill="freeze" calcMode="spline" keySplines="0.4 0 0.2 1"/>
+    </rect>
+    <text x="388" y="46" text-anchor="end" font-family="ui-monospace,monospace" font-size="7" fill="#F5A472">94%</text>
+  </g>
+  <!-- 87% -->
+  <g class="res2">
+    <rect x="272" y="62" width="118" height="32" rx="3" fill="#0F0C0A" stroke="rgba(232,112,58,0.28)" stroke-width="1"/>
+    <text x="280" y="75" font-family="ui-monospace,monospace" font-size="8" fill="rgba(255,255,255,0.52)">Alex Torres</text>
+    <rect x="280" y="81" width="84" height="2.5" rx="1.25" fill="rgba(255,255,255,0.07)"/>
+    <rect x="280" y="81" width="0"   height="2.5" rx="1.25" fill="rgba(232,112,58,0.72)">
+      <animate attributeName="width" from="0" to="73" dur="0.7s" begin="1.8s" fill="freeze" calcMode="spline" keySplines="0.4 0 0.2 1"/>
+    </rect>
+    <text x="388" y="84" text-anchor="end" font-family="ui-monospace,monospace" font-size="7" fill="rgba(245,164,114,0.65)">87%</text>
+  </g>
+  <!-- 71% -->
+  <g class="res3">
+    <rect x="272" y="100" width="118" height="32" rx="3" fill="#0F0C0A" stroke="rgba(232,112,58,0.15)" stroke-width="1"/>
+    <text x="280" y="113" font-family="ui-monospace,monospace" font-size="8" fill="rgba(255,255,255,0.32)">James Park</text>
+    <rect x="280" y="119" width="84" height="2.5" rx="1.25" fill="rgba(255,255,255,0.07)"/>
+    <rect x="280" y="119" width="0"   height="2.5" rx="1.25" fill="rgba(232,112,58,0.42)">
+      <animate attributeName="width" from="0" to="60" dur="0.7s" begin="2.1s" fill="freeze" calcMode="spline" keySplines="0.4 0 0.2 1"/>
+    </rect>
+    <text x="388" y="122" text-anchor="end" font-family="ui-monospace,monospace" font-size="7" fill="rgba(245,164,114,0.38)">71%</text>
+  </g>
+</svg>

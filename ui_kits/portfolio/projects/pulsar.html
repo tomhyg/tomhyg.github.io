@@ -1,0 +1,1043 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PULSAR — Tom Huyghe</title>
+  <link rel="icon" type="image/png" href="../../../assets/favicon.png" media="(prefers-color-scheme: dark)" />
+  <link rel="icon" type="image/png" href="../../../assets/favicon-light.png" media="(prefers-color-scheme: light)" />
+  <meta name="description" content="Cardiac wearable validated on 50+ patients. ESP32-S3, FreeRTOS, AWS IoT, IEC 62304." />
+  <link rel="stylesheet" href="../../../colors_and_type.css" />
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    html, body { margin: 0; padding: 0; }
+    body { background: var(--bg-0); overflow-x: hidden; }
+    img { display: block; max-width: 100%; }
+
+    /* ── Reading progress bar ── */
+    .pProgress {
+      position: fixed; top: 0; left: 0; z-index: 200;
+      height: 2px; width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-soft));
+      transition: width 80ms linear;
+      pointer-events: none;
+    }
+
+    /* ── Mouse glow ── */
+    .pMouseGlow {
+      position: fixed; pointer-events: none; z-index: 4;
+      width: 700px; height: 700px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(124,92,255,0.09) 0%, transparent 65%);
+      transform: translate(-50%, -50%);
+      opacity: 0;
+      transition: opacity 0.4s;
+    }
+
+    /* ── Reveal variants ── */
+    .rv {
+      opacity: 0; transform: translateY(22px);
+      transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
+    }
+    .rv.on { opacity: 1; transform: translateY(0); }
+
+    .rv-left {
+      opacity: 0; transform: translateX(-28px);
+      transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
+    }
+    .rv-left.on { opacity: 1; transform: translateX(0); }
+
+    .rv-right {
+      opacity: 0; transform: translateX(28px);
+      transition: opacity 0.75s var(--ease), transform 0.75s var(--ease);
+    }
+    .rv-right.on { opacity: 1; transform: translateX(0); }
+
+    .rv-scale {
+      opacity: 0; transform: scale(0.94);
+      transition: opacity 0.6s var(--ease), transform 0.6s var(--ease);
+    }
+    .rv-scale.on { opacity: 1; transform: scale(1); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .rv, .rv-left, .rv-right, .rv-scale { opacity:1; transform:none; transition:none; }
+    }
+
+    /* ── Nav ── */
+    .pNav {
+      position: sticky; top: 0; z-index: 50;
+      border-bottom: 1px solid transparent;
+      transition: background var(--motion) var(--ease), border-color var(--motion) var(--ease);
+    }
+    .pNav.scrolled {
+      background: rgba(7,7,11,0.85);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border-bottom-color: var(--border);
+    }
+    .pNav-inner {
+      max-width: var(--max-width); margin: 0 auto;
+      padding: 10px var(--gutter);
+      display: flex; align-items: center;
+      gap: var(--s-5);
+    }
+    .pNav-brand {
+      display: inline-flex; align-items: center; gap: 10px;
+      font-weight: 600; font-size: 15px; letter-spacing: -0.01em;
+      color: var(--fg-1); text-decoration: none; white-space: nowrap; flex-shrink: 0;
+    }
+    .pNav-brand:hover { color: var(--fg-1); }
+    .pNav-brand-logo {
+      height: 100px; width: auto; object-fit: contain; flex-shrink: 0;
+      filter: brightness(0) invert(1);
+      transition: filter var(--motion-fast) var(--ease);
+      margin: -18px -12px;
+    }
+    .pNav-brand:hover .pNav-brand-logo {
+      filter: brightness(0) invert(1) drop-shadow(0 0 8px rgba(124,92,255,0.6));
+    }
+    .pNav-links { display: flex; gap: var(--s-5); flex: 1; }
+    .pNav-links a {
+      font-size: 13px; color: var(--fg-2); font-weight: 500;
+      white-space: nowrap; text-decoration: none;
+      position: relative; padding-bottom: 2px;
+      transition: color var(--motion-fast) var(--ease);
+    }
+    .pNav-links a::after {
+      content: ""; position: absolute; bottom: -2px; left: 0;
+      width: 0; height: 1px; background: var(--accent);
+      transition: width var(--motion) var(--ease);
+    }
+    .pNav-links a:hover { color: var(--fg-1); }
+    .pBurger {
+      display: none; flex-direction: column; gap: 5px;
+      background: none; border: none; padding: 4px; cursor: pointer; margin-left: auto;
+    }
+    .pBurger span {
+      display: block; width: 20px; height: 1.5px; background: var(--fg-2);
+      transition: transform var(--motion-fast) var(--ease), opacity var(--motion-fast) var(--ease);
+      transform-origin: center;
+    }
+    .pBurger.is-open span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+    .pBurger.is-open span:nth-child(2) { opacity: 0; }
+    .pBurger.is-open span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+    .pMobileMenu {
+      display: none; position: fixed; inset: 0; top: 57px;
+      background: rgba(7,7,11,0.97); backdrop-filter: blur(16px);
+      z-index: 49; flex-direction: column;
+      padding: var(--s-7) var(--gutter); gap: var(--s-5);
+      border-top: 1px solid var(--border);
+    }
+    .pMobileMenu.is-open { display: flex; }
+    .pMobileMenu a {
+      font-size: 22px; font-weight: 600; color: var(--fg-2);
+      text-decoration: none; letter-spacing: -0.01em;
+      display: flex; align-items: center; gap: 14px;
+      transition: color var(--motion-fast) var(--ease);
+    }
+    .pMobileMenu a:hover { color: var(--fg-1); }
+
+    /* ── Hero ── */
+    .pHero {
+      position: relative; overflow: hidden;
+      min-height: 92vh;
+    }
+    .pHero-bg { position: absolute; inset: 0; z-index: 0; }
+    .pHero-texture {
+      position: absolute; inset: 0;
+      background: url("../../../assets/texture-cyan.jpg") center/cover;
+      mix-blend-mode: screen; opacity: 0.10;
+    }
+    .pHero-veil {
+      position: absolute; inset: 0;
+      background: linear-gradient(180deg,
+        rgba(7,7,11,0.15) 0%,
+        rgba(7,7,11,0.55) 55%,
+        var(--bg-0) 100%);
+    }
+    /* Ambient violet glow in hero */
+    .pHero-ambient {
+      position: absolute; right: 8%; top: 50%;
+      transform: translateY(-50%);
+      width: 560px; height: 560px; border-radius: 50%;
+      background: radial-gradient(circle,
+        rgba(124,92,255,0.16) 0%,
+        rgba(183,148,255,0.06) 45%,
+        transparent 70%);
+      pointer-events: none; z-index: 1;
+    }
+
+    /* Grid hero: text left, watches right — both within max-width */
+    .pHero-inner {
+      position: relative; z-index: 2;
+      max-width: var(--max-width); margin: 0 auto;
+      padding: 0 var(--gutter);
+      min-height: 92vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
+      gap: var(--s-8);
+    }
+    .pHero-left {
+      display: flex; flex-direction: column; gap: var(--s-5);
+      padding: var(--s-10) 0 var(--s-8);
+    }
+    .pHero-right {
+      display: flex; align-items: center; justify-content: center;
+      padding: var(--s-8) 0;
+    }
+    .pHero-watches {
+      width: 100%; max-width: 560px;
+      filter: drop-shadow(0 24px 60px rgba(0,0,0,0.55))
+              drop-shadow(0 0 80px rgba(124,92,255,0.22));
+      animation: watchFloat 7s ease-in-out infinite;
+      will-change: transform;
+    }
+    @keyframes watchFloat {
+      0%,100% { transform: translateY(0px) rotate(-1.2deg); }
+      50%      { transform: translateY(-16px) rotate(1.2deg); }
+    }
+    .pHero-eyebrow {
+      font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--fg-3);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .pHero-eyebrow::before {
+      content: ""; width: 20px; height: 1px; background: var(--accent); flex-shrink: 0;
+    }
+    .pHero-title {
+      font-size: clamp(68px, 8.5vw, 116px);
+      line-height: 0.92; font-weight: 600;
+      letter-spacing: -0.04em; color: var(--fg-1); margin: 0;
+    }
+    .pHero-sub {
+      font-size: 17px; line-height: 27px; color: var(--fg-2); max-width: 440px; margin: 0;
+    }
+    .pHero-scroll {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-family: var(--font-mono); font-size: 10px;
+      letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-4);
+    }
+    .pHero-scroll svg { animation: scrollBounce 2.2s ease-in-out infinite; }
+    @keyframes scrollBounce {
+      0%,100% { transform: translateY(0); }
+      50%      { transform: translateY(5px); }
+    }
+
+    /* ── Colorways ── */
+    .pColorways-inner {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: var(--s-5); align-items: end;
+    }
+    .pColorway {
+      display: flex; flex-direction: column; align-items: center; gap: var(--s-4);
+    }
+    .pColorway-img {
+      width: 100%; max-width: 260px;
+      transition: transform 0.5s var(--ease), filter 0.5s var(--ease);
+    }
+    .pColorway:hover .pColorway-img {
+      transform: translateY(-14px) scale(1.05);
+    }
+    .pColorway-label {
+      font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--fg-3);
+    }
+    @media (max-width: 960px) {
+      .pColorways-inner { grid-template-columns: 1fr; max-width: 320px; }
+    }
+
+    /* ── Stats bar ── */
+    .pStats {
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: rgba(14,14,20,0.85);
+      backdrop-filter: blur(10px);
+    }
+    .pStats-inner {
+      max-width: var(--max-width); margin: 0 auto;
+      padding: 0 var(--gutter);
+      display: flex;
+    }
+    .pStat {
+      flex: 1; padding: var(--s-5) var(--s-4);
+      border-right: 1px solid var(--border);
+      opacity: 0; transform: translateY(14px);
+      transition: opacity 0.55s var(--ease), transform 0.55s var(--ease);
+    }
+    .pStat:last-child { border-right: 0; }
+    .pStat.on { opacity: 1; transform: translateY(0); }
+    .pStat-val {
+      font-size: 28px; font-weight: 600; letter-spacing: -0.025em;
+      line-height: 1; margin-bottom: 5px;
+      background: linear-gradient(135deg, var(--fg-1) 30%, var(--accent-soft) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .pStat-label {
+      font-family: var(--font-mono); font-size: 10px;
+      letter-spacing: 0.07em; text-transform: uppercase; color: var(--fg-3);
+    }
+
+    /* ── Sections ── */
+    .pSection { border-top: 1px solid var(--border); }
+    .pSection-inner {
+      max-width: var(--max-width); margin: 0 auto;
+      padding: var(--s-9) var(--gutter);
+      display: grid; grid-template-columns: 220px 1fr;
+      gap: var(--s-9); align-items: start;
+    }
+    .pSection-label {
+      font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--fg-3);
+      position: sticky; top: 80px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .pSection-label::before { content: ""; width: 16px; height: 1px; background: var(--accent); flex-shrink: 0; }
+    .pSection-body { display: flex; flex-direction: column; gap: var(--s-6); }
+    .pSection-title {
+      font-size: 38px; line-height: 44px; font-weight: 600;
+      letter-spacing: -0.025em; color: var(--fg-1); margin: 0;
+    }
+    .pSection-text {
+      font-size: 16px; line-height: 27px; color: var(--fg-2); margin: 0; max-width: 640px;
+    }
+
+    /* ── Spec table ── */
+    .pSpecs { display: flex; flex-direction: column; }
+    .pSpec {
+      display: grid; grid-template-columns: 160px 1fr;
+      gap: var(--s-4); padding: 13px 0;
+      border-top: 1px solid var(--border);
+    }
+    .pSpec:first-child { border-top: 0; }
+    .pSpec dt {
+      font-family: var(--font-mono); font-size: 11px;
+      letter-spacing: 0.07em; text-transform: uppercase;
+      color: var(--fg-3); padding-top: 2px;
+    }
+    .pSpec dd { margin: 0; font-size: 14px; line-height: 22px; color: var(--fg-1); }
+
+    /* ── Chips ── */
+    .pChips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .pChip {
+      font-family: var(--font-mono); font-size: 11px;
+      padding: 5px 11px; border: 1px solid var(--border);
+      border-radius: 999px; color: var(--fg-2); letter-spacing: 0.02em;
+      transition: border-color var(--motion-fast) var(--ease), color var(--motion-fast) var(--ease);
+      cursor: default;
+    }
+    .pChip:hover { border-color: var(--accent); color: var(--accent-soft); }
+
+    /* ── Image grid ── */
+    .pImgGrid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4);
+    }
+    .pImgGrid img {
+      width: 100%; border-radius: var(--r-3);
+      border: 1px solid var(--border);
+      object-fit: cover; aspect-ratio: 4/3;
+      transition: transform var(--motion) var(--ease), border-color var(--motion) var(--ease);
+    }
+    .pImgGrid img:hover { transform: scale(1.02); border-color: var(--border-strong); }
+
+    /* ── Result cards ── */
+    .pResults {
+      display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4);
+    }
+    .pResult {
+      background: var(--bg-1); border: 1px solid var(--border);
+      border-radius: var(--r-3); padding: var(--s-5) var(--s-5) var(--s-4);
+      display: flex; flex-direction: column; gap: 6px;
+      transition: border-color var(--motion) var(--ease), background var(--motion) var(--ease);
+    }
+    .pResult:hover { border-color: var(--border-strong); background: var(--bg-2); }
+    .pResult-val {
+      font-size: 42px; font-weight: 600; letter-spacing: -0.03em; line-height: 1;
+      background: linear-gradient(135deg, var(--fg-1) 30%, var(--accent-soft) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .pResult-label { font-size: 13px; line-height: 20px; color: var(--fg-2); }
+
+    /* ── Heartbeat ── */
+    .pHeartbeat { opacity: 0.55; }
+    .pHb-line {
+      stroke-dasharray: 400; stroke-dashoffset: 400;
+      animation: hbDraw 2.4s var(--ease) infinite;
+    }
+    @keyframes hbDraw {
+      0%   { stroke-dashoffset: 400; opacity: 1; }
+      65%  { stroke-dashoffset: 0;   opacity: 1; }
+      90%  { stroke-dashoffset: 0;   opacity: 0; }
+      100% { stroke-dashoffset: 400; opacity: 0; }
+    }
+
+    /* ── GitHub CTA ── */
+    .pGithub {
+      display: inline-flex; align-items: center; gap: var(--s-3);
+      background: var(--bg-1); border: 1px solid var(--border);
+      border-radius: var(--r-2); padding: 12px 20px;
+      text-decoration: none; color: var(--fg-1);
+      font-size: 14px; font-weight: 500; align-self: flex-start;
+      transition: border-color var(--motion-fast) var(--ease),
+                  background var(--motion-fast) var(--ease),
+                  box-shadow var(--motion-fast) var(--ease);
+    }
+    .pGithub:hover {
+      border-color: var(--accent);
+      background: rgba(124,92,255,0.08);
+      box-shadow: 0 0 0 1px rgba(124,92,255,0.2);
+      color: var(--fg-1);
+    }
+
+    /* ── Next project ── */
+    .pNext { border-top: 1px solid var(--border); background: var(--bg-1); }
+    .pNext-inner {
+      max-width: var(--max-width); margin: 0 auto;
+      padding: var(--s-8) var(--gutter);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .pNext-meta { display: flex; flex-direction: column; gap: 4px; }
+    .pNext-label {
+      font-family: var(--font-mono); font-size: 10px;
+      letter-spacing: 0.07em; text-transform: uppercase; color: var(--fg-3);
+    }
+    .pNext-link {
+      font-size: 24px; font-weight: 600; letter-spacing: -0.015em;
+      color: var(--fg-1); text-decoration: none;
+      display: inline-flex; align-items: center; gap: var(--s-3);
+      transition: color var(--motion-fast) var(--ease);
+    }
+    .pNext-link svg { transition: transform var(--motion-fast) var(--ease); }
+    .pNext-link:hover { color: var(--accent-soft); }
+    .pNext-link:hover svg { transform: translateX(5px); }
+
+    /* ── Lang toggle ── */
+    .pNav-right { display:flex; align-items:center; gap:var(--s-3); }
+    .pLang { display:flex; align-items:center; gap:2px; background:var(--bg-2); border:1px solid var(--border); border-radius:var(--r-1); padding:2px; }
+    .pLangBtn { background:none; border:none; cursor:pointer; font-family:var(--font-mono); font-size:10px; letter-spacing:.06em; color:var(--fg-3); padding:3px 7px; border-radius:2px; transition:all var(--motion-fast) var(--ease); }
+    .pLangBtn.is-active { background:var(--bg-3); color:var(--fg-1); }
+    .pLangBtn:hover:not(.is-active) { color:var(--fg-2); }
+
+    /* ── Footer ── */
+    footer { border-top: 1px solid var(--border); }
+    .pFooter {
+      max-width: var(--max-width); margin: 0 auto;
+      padding: var(--s-5) var(--gutter);
+      display: flex; justify-content: space-between; align-items: center;
+      font-family: var(--font-mono); font-size: 11px;
+      letter-spacing: 0.04em; color: var(--fg-3);
+    }
+
+    /* ── PCB 3D viewer ── */
+    .pPCBViewer {
+      width: 100%; height: 420px;
+      border-radius: var(--r-2);
+      border: 1px solid var(--border);
+      background: var(--bg-2);
+      --poster-color: transparent;
+    }
+    .pPCBViewer::part(default-progress-bar) { background: var(--accent); }
+    .pPCBViewer-label {
+      font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em;
+      color: var(--fg-3); text-transform: uppercase;
+      display: flex; align-items: center; gap: 8px; margin-top: var(--s-3);
+    }
+    .pPCBViewer-label::before {
+      content: ""; width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent); flex-shrink: 0;
+      box-shadow: 0 0 6px var(--accent);
+    }
+    /* ── PCB scroll scenes ── */
+    .pPCBScroll { display: flex; flex-direction: column; gap: var(--s-4); }
+    .pPCBScene { height: 200vh; position: relative; }
+    .pPCBScene-sticky {
+      position: sticky; top: 72px;
+      height: calc(100vh - 72px);
+      overflow: hidden;
+    }
+    .pPCBModel {
+      width: 100%; height: 100%;
+      --poster-color: transparent;
+      background: transparent;
+    }
+    .pPCBScene-label {
+      position: absolute; bottom: var(--s-6); left: var(--s-6);
+      display: flex; flex-direction: column; gap: 5px;
+      pointer-events: none;
+    }
+    .pPCBScene-tag {
+      font-family: var(--font-mono); font-size: 11px;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--accent);
+    }
+    .pPCBScene-sub {
+      font-family: var(--font-mono); font-size: 10px;
+      letter-spacing: 0.06em; color: var(--fg-3);
+    }
+    .pPCBScene-progress {
+      position: absolute; bottom: 0; left: 0;
+      height: 1px; width: 0%;
+      background: var(--accent);
+      transition: width 60ms linear;
+    }
+
+    /* ── Stagger delays for section children ── */
+    .pSection-body > *:nth-child(1) { transition-delay: 0ms; }
+    .pSection-body > *:nth-child(2) { transition-delay: 80ms; }
+    .pSection-body > *:nth-child(3) { transition-delay: 160ms; }
+    .pSection-body > *:nth-child(4) { transition-delay: 240ms; }
+    .pSection-body > *:nth-child(5) { transition-delay: 320ms; }
+
+    /* ── Responsive ── */
+    @media (max-width: 960px) {
+      .pNav-links { display: none; }
+      .pBurger { display: flex; }
+      .pHero-inner { grid-template-columns: 1fr; min-height: auto; }
+      .pHero-right { display: none; }
+      .pHero-left { padding: var(--s-9) 0 var(--s-7); }
+      .pHero-ambient { right: 0; top: 0; transform: none; opacity: 0.5; }
+      .pSection-inner { grid-template-columns: 1fr; gap: var(--s-6); }
+      .pSection-label { position: static; }
+      .pStats-inner { flex-wrap: wrap; }
+      .pStat { flex: 1 1 45%; }
+      .pResults { grid-template-columns: 1fr; }
+      .pImgGrid { grid-template-columns: 1fr; }
+      .pNext-inner { flex-direction: column; gap: var(--s-4); align-items: flex-start; }
+    }
+    @media (max-width: 600px) {
+      .pHero-title { font-size: 58px; }
+      .pSection-inner { padding: var(--s-7) var(--s-5); }
+      .pStat { flex: 1 1 100%; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Reading progress -->
+  <div class="pProgress" id="pProgress"></div>
+  <!-- Mouse glow -->
+  <div class="pMouseGlow" id="pMouseGlow"></div>
+
+  <!-- NAV -->
+  <header class="pNav" id="pNav">
+    <div class="pNav-inner">
+      <a href="../index.html" class="pNav-brand">
+        <img src="../../../assets/logo.png" alt="" class="pNav-brand-logo" />
+        Tom Huyghe
+      </a>
+      <nav class="pNav-links">
+        <a href="../index.html#work" data-i18n="nav.work">Work</a>
+        <a href="../index.html#skills" data-i18n="nav.skills">Skills</a>
+        <a href="../index.html#about" data-i18n="nav.about">About</a>
+        <a href="../index.html#contact" data-i18n="nav.contact">Contact</a>
+      </nav>
+      <div class="pLang">
+        <button class="pLangBtn" data-lang="en" onclick="setLang('en')">EN</button>
+        <button class="pLangBtn" data-lang="fr" onclick="setLang('fr')">FR</button>
+      </div>
+      <button class="pBurger" id="pBurger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+  <div class="pMobileMenu" id="pMobileMenu">
+    <a href="../index.html#work" data-i18n="nav.work" onclick="closeMobileMenu()">Work</a>
+    <a href="../index.html#skills" data-i18n="nav.skills" onclick="closeMobileMenu()">Skills</a>
+    <a href="../index.html#about" data-i18n="nav.about" onclick="closeMobileMenu()">About</a>
+    <a href="../index.html#contact" data-i18n="nav.contact" onclick="closeMobileMenu()">Contact</a>
+    <div class="pLang" style="margin-top:var(--s-4)">
+      <button class="pLangBtn" data-lang="en" onclick="setLang('en');closeMobileMenu()">EN</button>
+      <button class="pLangBtn" data-lang="fr" onclick="setLang('fr');closeMobileMenu()">FR</button>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <section class="pHero">
+    <div class="pHero-bg">
+      <div class="pHero-texture"></div>
+      <div class="pHero-veil"></div>
+    </div>
+    <div class="pHero-ambient"></div>
+
+    <div class="pHero-inner">
+      <!-- Left: text -->
+      <div class="pHero-left">
+        <div class="pHero-eyebrow rv" id="rv0" data-i18n="hero.eyebrow">EMBEDDED · 2025 · MEDTECH</div>
+        <h1 class="pHero-title rv" id="rv1">PULSAR</h1>
+        <p class="pHero-sub rv" id="rv2" data-i18n="hero.sub">
+          Cardiac wearable for clinical trials. From firmware to validated clinical data — 50+ patients, 99.2% uptime, zero data loss.
+        </p>
+        <svg class="pHeartbeat rv" id="rv3" width="280" height="36" viewBox="0 0 280 36" fill="none">
+          <polyline class="pHb-line"
+            points="0,18 50,18 60,18 65,4 70,32 75,18 95,18 105,18 110,6 115,30 120,18 140,18 190,18 195,4 200,32 205,18 220,18 280,18"
+            stroke="var(--success)" stroke-width="1.5"
+            stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div class="pHero-scroll rv" id="rv4" data-i18n="hero.scroll">
+          Scroll to explore
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M12 5v14M5 12l7 7 7-7"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Right: watches -->
+      <div class="pHero-right rv-right" id="rv5">
+        <img src="../../../assets/pulsar-nobg.png" alt="PULSAR wearable — 3 prototype watches" class="pHero-watches" id="pHeroWatch" />
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS BAR -->
+  <div class="pStats">
+    <div class="pStats-inner">
+      <div class="pStat" id="st0">
+        <div class="pStat-val" data-target="50" data-suffix="+">50+</div>
+        <div class="pStat-label" data-i18n="stat.0">Patients validated</div>
+      </div>
+      <div class="pStat" id="st1">
+        <div class="pStat-val" data-target="99.2" data-suffix="%" data-decimal="1">99.2%</div>
+        <div class="pStat-label" data-i18n="stat.1">System uptime</div>
+      </div>
+      <div class="pStat" id="st2">
+        <div class="pStat-val" data-target="400" data-suffix="h+">400h+</div>
+        <div class="pStat-label" data-i18n="stat.2">Clinical recordings</div>
+      </div>
+      <div class="pStat" id="st3">
+        <div class="pStat-val" data-target="15" data-suffix="">15</div>
+        <div class="pStat-label" data-i18n="stat.3">Units deployed</div>
+      </div>
+      <div class="pStat" id="st4">
+        <div class="pStat-val" data-target="0" data-suffix="%">0%</div>
+        <div class="pStat-label" data-i18n="stat.4">Data loss</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTEXT -->
+  <section class="pSection">
+    <div class="pSection-inner">
+      <div class="pSection-label rv-left" data-i18n="context.label">Context</div>
+      <div class="pSection-body">
+        <h2 class="pSection-title rv" data-i18n="context.title">Cardiac events happen outside the hospital.</h2>
+        <p class="pSection-text rv" data-i18n="context.body1">
+          80% of arrhythmias occur in daily life. Standard Holter monitors restrict movement, require clinical setup, and return data days later. ICU teams needed a wearable that captures, processes and transmits in real time — without requiring a nurse to operate it.
+        </p>
+        <p class="pSection-text rv" data-i18n="context.body2">
+          PULSAR is a physiological monitoring wristband designed for ambulatory clinical trials. Built at <strong style="color:var(--fg-1)">AGORANOV Paris</strong>, validated at <strong style="color:var(--fg-1)">Clinique Hartmann, Neuilly-sur-Seine</strong> under the supervision of Dr. Lee (ICU).
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- HARDWARE -->
+  <section class="pSection">
+    <div class="pSection-inner">
+      <div class="pSection-label rv-left" data-i18n="hw.label">Hardware</div>
+      <div class="pSection-body">
+        <h2 class="pSection-title rv" data-i18n="hw.title">ESP32-S3. Dual-core. Always on.</h2>
+        <p class="pSection-text rv" data-i18n="hw.body">
+          Real-time dual-core processing on ESP32-S3 at 240MHz with 8MB PSRAM. Multi-spectral optical sensor capturing PPG at 4 channels × 100Hz. Zero-loss data pipeline solving critical FIFO overflow — every sample recorded, no exceptions.
+        </p>
+        <dl class="pSpecs rv">
+          <div class="pSpec"><dt>MCU</dt><dd>ESP32-S3 — 240MHz dual-core, 8MB PSRAM</dd></div>
+          <div class="pSpec"><dt>Sensors</dt><dd>PPG 4-channel @ 100Hz, 3-axis accelerometer, fuel gauge</dd></div>
+          <div class="pSpec"><dt>Storage</dt><dd>MicroSD with FAT32 — standalone offline recording</dd></div>
+          <div class="pSpec"><dt>Connectivity</dt><dd>Wi-Fi 802.11n → AWS S3 · BLE 5.0</dd></div>
+          <div class="pSpec"><dt>Bus</dt><dd>I²C @ 400kHz · SPI · UART</dd></div>
+          <div class="pSpec"><dt>Battery</dt><dd>LiPo — 8–10h (ESP32 proto) · 3–5 days (nRF5340 target)</dd></div>
+          <div class="pSpec"><dt>Production target</dt><dd>Nordic nRF5340 — ARM Cortex-M33, ultra-low power</dd></div>
+        </dl>
+        <div class="pPCBScroll">
+          <!-- Bottom PCB -->
+          <div class="pPCBScene" id="pcbScene1">
+            <div class="pPCBScene-sticky">
+              <model-viewer
+                id="pcbViewer1"
+                class="pPCBModel"
+                src="../../../assets/pcb1.glb"
+                camera-orbit="0deg 72deg auto"
+                shadow-intensity="1"
+                shadow-softness="0.8"
+                environment-image="neutral"
+                exposure="1.3"
+              ></model-viewer>
+              <div class="pPCBScene-label">
+                <span class="pPCBScene-tag">Bottom PCB</span>
+                <span class="pPCBScene-sub">ESP32-S3 · Power management · MicroSD · LiPo fuel gauge</span>
+              </div>
+              <div class="pPCBScene-progress" id="pcbProg1"></div>
+            </div>
+          </div>
+          <!-- Top PCB -->
+          <div class="pPCBScene" id="pcbScene2">
+            <div class="pPCBScene-sticky">
+              <model-viewer
+                id="pcbViewer2"
+                class="pPCBModel"
+                src="../../../assets/pcb4-compressed.glb"
+                camera-orbit="0deg 72deg auto"
+                shadow-intensity="1"
+                shadow-softness="0.8"
+                environment-image="neutral"
+                exposure="1.3"
+              ></model-viewer>
+              <div class="pPCBScene-label">
+                <span class="pPCBScene-tag">Top PCB</span>
+                <span class="pPCBScene-sub">Multi-spectral PPG · Optical front-end · BLE antenna</span>
+              </div>
+              <div class="pPCBScene-progress" id="pcbProg2"></div>
+            </div>
+          </div>
+        </div>
+        <div class="pImgGrid rv-scale">
+          <img src="../../../assets/pulsar-dual.jpg" alt="PULSAR dual prototypes" loading="lazy" />
+          <img src="../../../assets/pulsar-sensor.jpg" alt="PULSAR optical sensor" loading="lazy" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FIRMWARE -->
+  <section class="pSection">
+    <div class="pSection-inner">
+      <div class="pSection-label rv-left" data-i18n="fw.label">Firmware</div>
+      <div class="pSection-body">
+        <h2 class="pSection-title rv" data-i18n="fw.title">Zero-loss pipeline. Two modes.</h2>
+        <p class="pSection-text rv" data-i18n="fw.body">
+          FreeRTOS task architecture with dedicated acquisition, processing and transmission tasks running on separate cores. Two operating modes: Wi-Fi + AWS IoT cloud pipeline for live trial monitoring, or standalone SD card recording for offline environments.
+        </p>
+        <dl class="pSpecs rv">
+          <div class="pSpec"><dt>RTOS</dt><dd>FreeRTOS — multi-task, dual-core assignment</dd></div>
+          <div class="pSpec"><dt>Pipeline</dt><dd>Zero-loss FIFO — resolves overflow under continuous 100Hz acquisition</dd></div>
+          <div class="pSpec"><dt>Cloud mode</dt><dd>Wi-Fi → MQTT → AWS IoT Core → S3 storage</dd></div>
+          <div class="pSpec"><dt>Offline mode</dt><dd>FAT32 → MicroSD — full autonomy, no network required</dd></div>
+          <div class="pSpec"><dt>Power</dt><dd>Deep-sleep between acquisition bursts — PSRAM-optimised</dd></div>
+          <div class="pSpec"><dt>Languages</dt><dd>C / C++</dd></div>
+        </dl>
+        <div class="pChips rv">
+          <span class="pChip">ESP32-S3</span>
+          <span class="pChip">FreeRTOS</span>
+          <span class="pChip">C / C++</span>
+          <span class="pChip">AWS IoT Core</span>
+          <span class="pChip">MQTT</span>
+          <span class="pChip">BLE 5.0</span>
+          <span class="pChip">I²C · SPI</span>
+          <span class="pChip">FAT32</span>
+          <span class="pChip">MicroSD</span>
+          <span class="pChip">Deep-sleep</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CLINICAL -->
+  <section class="pSection">
+    <div class="pSection-inner">
+      <div class="pSection-label rv-left" data-i18n="clinical.label">Clinical trial</div>
+      <div class="pSection-body">
+        <h2 class="pSection-title rv" data-i18n="clinical.title">3 months. 15 units. Clinique Hartmann.</h2>
+        <p class="pSection-text rv" data-i18n="clinical.body">
+          Continuous deployment at Clinique Hartmann (Neuilly-sur-Seine) under ICU supervision. 50+ patients enrolled across diverse age groups and pathologies. Medical precision validated against professional-grade oximeters. Zero safety incidents.
+        </p>
+        <div class="pResults rv-scale">
+          <div class="pResult">
+            <div class="pResult-val" data-target="50" data-suffix="+">50+</div>
+            <div class="pResult-label" data-i18n="result.0">Patients enrolled across diverse age groups and pathologies</div>
+          </div>
+          <div class="pResult">
+            <div class="pResult-val" data-target="99.2" data-suffix="%" data-decimal="1">99.2%</div>
+            <div class="pResult-label" data-i18n="result.1">System uptime across 15 deployed units during 3-month trial</div>
+          </div>
+          <div class="pResult">
+            <div class="pResult-val" data-target="400" data-suffix="h+">400h+</div>
+            <div class="pResult-label" data-i18n="result.2">Hours of medical-grade physiological recordings collected</div>
+          </div>
+          <div class="pResult">
+            <div class="pResult-val" data-target="0" data-suffix="%">0%</div>
+            <div class="pResult-label" data-i18n="result.3">Data loss — zero firmware failures, zero safety incidents</div>
+          </div>
+        </div>
+        <dl class="pSpecs rv">
+          <div class="pSpec"><dt>Site</dt><dd>Clinique Hartmann, Neuilly-sur-Seine, France</dd></div>
+          <div class="pSpec"><dt>Physician</dt><dd>Dr. Lee — ICU supervisor</dd></div>
+          <div class="pSpec"><dt>Duration</dt><dd>3 months continuous deployment</dd></div>
+          <div class="pSpec"><dt>Units</dt><dd>15 devices deployed simultaneously</dd></div>
+          <div class="pSpec"><dt>Validation</dt><dd>Medical precision vs. professional oximeters</dd></div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- TEAM -->
+  <section class="pSection">
+    <div class="pSection-inner">
+      <div class="pSection-label rv-left" data-i18n="team.label">Team & context</div>
+      <div class="pSection-body">
+        <h2 class="pSection-title rv" data-i18n="team.title">6 months. AGORANOV Paris.</h2>
+        <p class="pSection-text rv" data-i18n="team.body">
+          Built April – October 2024 in the AGORANOV Paris incubator. Three-person core team with international industrialisation partner EMBRILL (India) for the production roadmap.
+        </p>
+        <dl class="pSpecs rv">
+          <div class="pSpec"><dt>My role</dt><dd>Firmware engineer — sole embedded developer on the project</dd></div>
+          <div class="pSpec"><dt>CEO</dt><dd>Neil Benhamou</dd></div>
+          <div class="pSpec"><dt>CTO</dt><dd>Thomas Baret — AI / Data</dd></div>
+          <div class="pSpec"><dt>Incubator</dt><dd>AGORANOV Paris</dd></div>
+          <div class="pSpec"><dt>Partner</dt><dd>EMBRILL (India) — industrialisation</dd></div>
+          <div class="pSpec"><dt>Duration</dt><dd>April – October 2024</dd></div>
+        </dl>
+        <div class="pColorways-inner rv-scale">
+          <div class="pColorway">
+            <img src="../../../assets/pulsar-nobg_purple.png" alt="PULSAR — Violet" class="pColorway-img" style="filter: drop-shadow(0 20px 50px rgba(124,92,255,0.45))" loading="lazy" />
+            <span class="pColorway-label">Violet</span>
+          </div>
+          <div class="pColorway">
+            <img src="../../../assets/pulsar-nobg_green.png" alt="PULSAR — Emerald" class="pColorway-img" style="filter: drop-shadow(0 20px 50px rgba(0,210,100,0.40))" loading="lazy" />
+            <span class="pColorway-label">Emerald</span>
+          </div>
+          <div class="pColorway">
+            <img src="../../../assets/pulsar-nobg_blue.png" alt="PULSAR — Cobalt" class="pColorway-img" style="filter: drop-shadow(0 20px 50px rgba(59,130,246,0.40))" loading="lazy" />
+            <span class="pColorway-label">Cobalt</span>
+          </div>
+        </div>
+        <a href="https://github.com/tomhyg/PULSAR" target="_blank" rel="noopener noreferrer" class="pGithub rv">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+          </svg>
+          View source — github.com/tomhyg/PULSAR
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- NEXT PROJECT -->
+  <div class="pNext">
+    <div class="pNext-inner">
+      <div class="pNext-meta">
+        <span class="pNext-label" data-i18n="next.label">Next project</span>
+      </div>
+      <a href="babycam.html" class="pNext-link">
+        BABYCAM
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h14M13 5l7 7-7 7"/>
+        </svg>
+      </a>
+    </div>
+  </div>
+
+  <footer>
+    <div class="pFooter">
+      <span>© 2025 Tom Huyghe · Paris</span>
+      <a href="../index.html" style="color:var(--fg-3);text-decoration:none;font-family:var(--font-mono);font-size:11px;transition:color 120ms">← Portfolio</a>
+    </div>
+  </footer>
+
+  <script>
+    /* ── i18n ── */
+    const COPY = {
+      en: {
+        'hero.eyebrow':'EMBEDDED · 2025 · MEDTECH',
+        'hero.sub':'Cardiac wearable for clinical trials. From firmware to validated clinical data — 50+ patients, 99.2% uptime, zero data loss.',
+        'hero.scroll':'Scroll to explore',
+        'stat.0':'Patients validated','stat.1':'System uptime','stat.2':'Clinical recordings','stat.3':'Units deployed','stat.4':'Data loss',
+        'context.label':'Context','context.title':'Cardiac events happen outside the hospital.',
+        'context.body1':'80% of arrhythmias occur in daily life. Standard Holter monitors restrict movement, require clinical setup, and return data days later. ICU teams needed a wearable that captures, processes and transmits in real time — without requiring a nurse to operate it.',
+        'context.body2':'PULSAR is a physiological monitoring wristband designed for ambulatory clinical trials. Built at <strong style="color:var(--fg-1)">AGORANOV Paris</strong>, validated at <strong style="color:var(--fg-1)">Clinique Hartmann, Neuilly-sur-Seine</strong> under the supervision of Dr. Lee (ICU).',
+        'hw.label':'Hardware','hw.title':'ESP32-S3. Dual-core. Always on.',
+        'hw.body':'Real-time dual-core processing on ESP32-S3 at 240MHz with 8MB PSRAM. Multi-spectral optical sensor capturing PPG at 4 channels × 100Hz. Zero-loss data pipeline solving critical FIFO overflow — every sample recorded, no exceptions.',
+        'fw.label':'Firmware','fw.title':'Zero-loss pipeline. Two modes.',
+        'fw.body':'FreeRTOS task architecture with dedicated acquisition, processing and transmission tasks running on separate cores. Two operating modes: Wi-Fi + AWS IoT cloud pipeline for live trial monitoring, or standalone SD card recording for offline environments.',
+        'clinical.label':'Clinical trial','clinical.title':'3 months. 15 units. Clinique Hartmann.',
+        'clinical.body':'Continuous deployment at Clinique Hartmann (Neuilly-sur-Seine) under ICU supervision. 50+ patients enrolled across diverse age groups and pathologies. Medical precision validated against professional-grade oximeters. Zero safety incidents.',
+        'result.0':'Patients enrolled across diverse age groups and pathologies',
+        'result.1':'System uptime across 15 deployed units during 3-month trial',
+        'result.2':'Hours of medical-grade physiological recordings collected',
+        'result.3':'Data loss — zero firmware failures, zero safety incidents',
+        'team.label':'Team & context','team.title':'6 months. AGORANOV Paris.',
+        'team.body':'Built April – October 2024 in the AGORANOV Paris incubator. Three-person core team with international industrialisation partner EMBRILL (India) for the production roadmap.',
+        'next.label':'Next project',
+        'nav.work':'Work','nav.skills':'Skills','nav.about':'About','nav.contact':'Contact',
+      },
+      fr: {
+        'hero.eyebrow':'EMBARQUÉ · 2025 · MEDTECH',
+        'hero.sub':'Bracelet cardiaque pour essais cliniques. Du firmware aux données validées — 50+ patients, 99,2\u00a0% de disponibilité, zéro perte de données.',
+        'hero.scroll':'Défiler pour explorer',
+        'stat.0':'Patients validés','stat.1':'Disponibilité système','stat.2':'Heures d\'enregistrement','stat.3':'Unités déployées','stat.4':'Perte de données',
+        'context.label':'Contexte','context.title':'Les événements cardiaques surviennent en dehors de l\'hôpital.',
+        'context.body1':'80\u00a0% des arythmies surviennent au quotidien. Les Holter standards limitent les mouvements, nécessitent une installation clinique et restituent les données des jours plus tard. Les équipes de réanimation avaient besoin d\'un bracelet capable de capturer, traiter et transmettre en temps réel — sans intervention infirmière.',
+        'context.body2':'PULSAR est un bracelet de surveillance physiologique conçu pour les essais cliniques ambulatoires. Développé à l\'incubateur <strong style="color:var(--fg-1)">AGORANOV Paris</strong>, validé à la <strong style="color:var(--fg-1)">Clinique Hartmann, Neuilly-sur-Seine</strong> sous la supervision du Dr Lee (réanimation).',
+        'hw.label':'Matériel','hw.title':'ESP32-S3. Dual-core. Toujours actif.',
+        'hw.body':'Traitement dual-core temps réel sur ESP32-S3 à 240\u00a0MHz avec 8\u00a0Mo de PSRAM. Capteur optique multi-spectral capturant le PPG sur 4 canaux × 100\u00a0Hz. Pipeline zéro perte résolvant le dépassement critique du FIFO — chaque échantillon enregistré, sans exception.',
+        'fw.label':'Firmware','fw.title':'Pipeline zéro perte. Deux modes.',
+        'fw.body':'Architecture de tâches FreeRTOS avec des tâches dédiées à l\'acquisition, au traitement et à la transmission sur des cœurs séparés. Deux modes\u00a0: pipeline cloud Wi-Fi + AWS IoT pour la surveillance en direct, ou enregistrement autonome sur carte SD pour les environnements hors réseau.',
+        'clinical.label':'Essai clinique','clinical.title':'3 mois. 15 unités. Clinique Hartmann.',
+        'clinical.body':'Déploiement continu à la Clinique Hartmann (Neuilly-sur-Seine) sous supervision en réanimation. 50+ patients enrôlés sur des groupes d\'âge et pathologies variés. Précision médicale validée face à des oxymètres professionnels. Zéro incident de sécurité.',
+        'result.0':'Patients enrôlés sur des groupes d\'âge et pathologies variés',
+        'result.1':'Disponibilité système sur 15 unités déployées pendant l\'essai de 3 mois',
+        'result.2':'Heures d\'enregistrements physiologiques de qualité médicale collectées',
+        'result.3':'Perte de données — zéro défaillance firmware, zéro incident de sécurité',
+        'team.label':'Équipe & contexte','team.title':'6 mois. AGORANOV Paris.',
+        'team.body':'Développé d\'avril à octobre 2024 dans l\'incubateur AGORANOV Paris. Équipe de trois personnes avec le partenaire d\'industrialisation international EMBRILL (Inde) pour la feuille de route production.',
+        'next.label':'Projet suivant',
+        'nav.work':'Projets','nav.skills':'Compétences','nav.about':'À propos','nav.contact':'Contact',
+      }
+    };
+    function setLang(l) {
+      localStorage.setItem('th-lang', l);
+      document.documentElement.lang = l;
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const t = COPY[l][el.dataset.i18n];
+        if (t !== undefined) el.innerHTML = t;
+      });
+      document.querySelectorAll('.pLangBtn').forEach(b => b.classList.toggle('is-active', b.dataset.lang === l));
+    }
+    /* ── Mobile burger ── */
+    const burger = document.getElementById("pBurger");
+    const mobileMenu = document.getElementById("pMobileMenu");
+    if (burger && mobileMenu) {
+      burger.addEventListener("click", () => {
+        burger.classList.toggle("is-open");
+        mobileMenu.classList.toggle("is-open");
+      });
+    }
+    function closeMobileMenu() {
+      if (burger) burger.classList.remove("is-open");
+      if (mobileMenu) mobileMenu.classList.remove("is-open");
+    }
+    (function(){ const l = localStorage.getItem('th-lang') || 'en'; setLang(l); })();
+
+    /* ── Nav scroll ── */
+    const nav = document.getElementById("pNav");
+    window.addEventListener("scroll", () => {
+      nav.classList.toggle("scrolled", window.scrollY > 24);
+    }, { passive: true });
+
+    /* ── Reading progress bar ── */
+    const progress = document.getElementById("pProgress");
+    function updateProgress() {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      progress.style.width = (docHeight > 0 ? (scrollTop / docHeight) * 100 : 0) + "%";
+    }
+    window.addEventListener("scroll", updateProgress, { passive: true });
+
+    /* ── Mouse glow ── */
+    const glow = document.getElementById("pMouseGlow");
+    let glowVisible = false;
+    document.addEventListener("mousemove", e => {
+      glow.style.left = e.clientX + "px";
+      glow.style.top  = e.clientY + "px";
+      if (!glowVisible) { glow.style.opacity = "1"; glowVisible = true; }
+    });
+    document.addEventListener("mouseleave", () => { glow.style.opacity = "0"; glowVisible = false; });
+
+    /* ── Hero entrance ── */
+    ["rv0","rv1","rv2","rv3","rv4"].forEach((id, i) => {
+      const el = document.getElementById(id);
+      if (el) setTimeout(() => el.classList.add("on"), 180 + i * 130);
+    });
+    setTimeout(() => {
+      const el = document.getElementById("rv5");
+      if (el) el.classList.add("on");
+    }, 500);
+
+    /* ── Count-up animation ── */
+    function countUp(el) {
+      const target  = parseFloat(el.dataset.target);
+      const suffix  = el.dataset.suffix || "";
+      const decimal = parseInt(el.dataset.decimal || "0");
+      if (target === 0) { el.textContent = "0" + suffix; return; }
+      const duration = 1100;
+      const startTime = performance.now();
+      function tick(now) {
+        const elapsed  = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased    = 1 - Math.pow(1 - progress, 3);
+        const value    = target * eased;
+        el.textContent = (decimal > 0 ? value.toFixed(decimal) : Math.round(value)) + suffix;
+        if (progress < 1) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    }
+
+    /* ── Stats entrance + count-up ── */
+    const statEls = [0,1,2,3,4].map(i => document.getElementById("st" + i));
+    const statsObs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          statEls.forEach((el, i) => {
+            if (!el) return;
+            setTimeout(() => {
+              el.classList.add("on");
+              const val = el.querySelector("[data-target]");
+              if (val) countUp(val);
+            }, i * 90);
+          });
+          statsObs.disconnect();
+        }
+      });
+    }, { threshold: 0.3 });
+    if (statEls[0]) statsObs.observe(statEls[0].parentElement);
+
+    /* ── Count-up for result cards ── */
+    const resultObs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.querySelectorAll("[data-target]").forEach((el, i) => {
+            setTimeout(() => countUp(el), i * 120);
+          });
+          resultObs.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.2 });
+    document.querySelectorAll(".pResults").forEach(el => resultObs.observe(el));
+
+    /* ── Scroll reveal for all .rv, .rv-left, .rv-right, .rv-scale ── */
+    const revealObs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add("on");
+          revealObs.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.10 });
+
+    /* ── PCB scroll-driven rotation ── */
+    const pcbScenes = [
+      { scene: document.getElementById('pcbScene1'), viewer: document.getElementById('pcbViewer1'), prog: document.getElementById('pcbProg1') },
+      { scene: document.getElementById('pcbScene2'), viewer: document.getElementById('pcbViewer2'), prog: document.getElementById('pcbProg2') },
+    ];
+    function onPCBScroll() {
+      pcbScenes.forEach(({ scene, viewer, prog }) => {
+        const rect = scene.getBoundingClientRect();
+        const scrolled = -(rect.top - 72);
+        const total = scene.offsetHeight - (window.innerHeight - 72);
+        if (scrolled < 0 || scrolled > total) return;
+        const progress = scrolled / total;
+        const theta = Math.round(progress * 360);
+        viewer.setAttribute('camera-orbit', `${theta}deg 72deg auto`);
+        prog.style.width = (progress * 100) + '%';
+      });
+    }
+    window.addEventListener('scroll', onPCBScroll, { passive: true });
+
+    document.querySelectorAll(".rv, .rv-left, .rv-right, .rv-scale").forEach(el => {
+      // Skip hero elements already handled above
+      if (!el.id || !el.id.startsWith("rv")) {
+        revealObs.observe(el);
+      }
+    });
+
+    /* ── Hero watches subtle parallax ── */
+    const watch = document.getElementById("pHeroWatch");
+    window.addEventListener("scroll", () => {
+      if (watch) {
+        watch.style.transform = `translateY(${window.scrollY * -0.06}px) `;
+      }
+    }, { passive: true });
+  </script>
+</body>
+</html>

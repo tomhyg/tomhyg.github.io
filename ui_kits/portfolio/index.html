@@ -1,0 +1,3217 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tom Huyghe — Embedded &amp; Fullstack Engineer</title>
+  <link rel="icon" type="image/png" href="../../assets/favicon.png" media="(prefers-color-scheme: dark)" />
+  <link rel="icon" type="image/png" href="../../assets/favicon-light.png" media="(prefers-color-scheme: light)" />
+  <meta name="description" content="Freelance engineer working on regulated MedTech firmware and fullstack web products. Based in Paris, France." />
+  <link rel="stylesheet" href="../../colors_and_type.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/devicon.min.css" />
+
+  <style>
+    /* ── Reset & base ── */
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    html, body, #root { margin: 0; padding: 0; }
+    body { background: var(--bg-0); overflow-x: hidden; }
+    img { display: block; max-width: 100%; }
+    button { font-family: inherit; }
+
+    /* ── Selection ── */
+    ::selection { background: var(--accent); color: var(--bg-0); }
+
+    /* ── Mouse glow ── */
+    #th-mouse-glow {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 700px;
+      height: 700px;
+      border-radius: 50%;
+      background: radial-gradient(
+        circle at center,
+        rgba(124, 92, 255, 0.07) 0%,
+        rgba(124, 92, 255, 0.03) 35%,
+        transparent 70%
+      );
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      will-change: transform;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #th-mouse-glow { display: none; }
+    }
+
+    /* ── Entrance animations ── */
+    .th-enter {
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity var(--motion-slow) var(--ease),
+                  transform var(--motion-slow) var(--ease);
+    }
+    .th-enter.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Generic reveal — used by About + Contact */
+    .th-reveal {
+      opacity: 0;
+      transform: translateY(14px);
+      transition: opacity 0.55s var(--ease), transform 0.55s var(--ease);
+    }
+    .th-reveal.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    /* Pill gets a subtle scale-up */
+    .th-reveal-scale {
+      transform: translateY(14px) scale(0.95);
+    }
+    .th-reveal-scale.is-visible {
+      transform: translateY(0) scale(1);
+    }
+
+    /* Portrait slides from right */
+    .th-reveal-portrait {
+      transform: translateX(24px) scale(0.97);
+    }
+    .th-reveal-portrait.is-visible {
+      transform: translateX(0) scale(1);
+    }
+
+    /* Stats */
+    .th-stat {
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 0.5s var(--ease), transform 0.5s var(--ease);
+    }
+    .th-stat.is-visible { opacity: 1; transform: translateY(0); }
+
+    @keyframes thValueFlash {
+      0%   { -webkit-text-fill-color: var(--accent-soft); }
+      100% { -webkit-text-fill-color: transparent; }
+    }
+    .th-stat.is-visible .thStat-value {
+      animation: thValueFlash 1s var(--ease) forwards;
+    }
+
+    /* Social links stagger */
+    .th-social {
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.4s var(--ease), transform 0.4s var(--ease),
+                  color var(--motion-fast) var(--ease);
+    }
+    .th-social.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .th-enter, .th-reveal, .th-social { opacity: 1; transform: none; transition: none; }
+    }
+
+    /* ── Nav ── */
+    .thNav {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: transparent;
+      transition: background var(--motion) var(--ease),
+                  border-color var(--motion) var(--ease);
+      border-bottom: 1px solid transparent;
+    }
+    .thNav.is-scrolled {
+      background: rgba(7, 7, 11, 0.80);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom-color: var(--border);
+    }
+    .thNav-inner {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 10px var(--gutter);
+      display: flex;
+      align-items: center;
+      gap: var(--s-6);
+    }
+    .thBrand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--fg-1);
+      font-weight: 600;
+      font-size: 15px;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      flex-shrink: 0;
+      text-decoration: none;
+    }
+    .thBrand:hover { color: var(--fg-1); }
+    .thBrand-logo {
+      width: auto;
+      height: 100px;
+      object-fit: contain;
+      flex-shrink: 0;
+      filter: brightness(0) invert(1);
+      opacity: 1;
+      transition: filter var(--motion-fast) var(--ease);
+      /* compense le whitespace du PNG */
+      margin: -18px -12px;
+    }
+    .thBrand:hover .thBrand-logo {
+      filter: brightness(0) invert(1) drop-shadow(0 0 8px rgba(124,92,255,0.6));
+    }
+    .thNav-links {
+      display: flex;
+      gap: var(--s-5);
+      flex: 1;
+    }
+    .thNav-links a {
+      font-size: 13px;
+      color: var(--fg-2);
+      font-weight: 500;
+      white-space: nowrap;
+      text-decoration: none;
+      position: relative;
+      padding-bottom: 2px;
+      transition: color var(--motion-fast) var(--ease);
+    }
+    .thNav-links a::after {
+      content: "";
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 0;
+      height: 1px;
+      background: var(--accent);
+      transition: width var(--motion) var(--ease);
+    }
+    .thNav-links a:hover { color: var(--fg-1); }
+    .thNav-links a.is-active {
+      color: var(--fg-1);
+    }
+    .thNav-links a.is-active::after { width: 100%; }
+    .thLang {
+      display: inline-flex;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      flex-shrink: 0;
+    }
+    .thLang button {
+      background: transparent;
+      border: 0;
+      color: var(--fg-3);
+      padding: 5px 10px;
+      cursor: pointer;
+      font: inherit;
+      letter-spacing: inherit;
+      transition: color var(--motion-fast) var(--ease),
+                  background var(--motion-fast) var(--ease);
+    }
+    .thLang button.is-active { background: var(--bg-2); color: var(--fg-1); }
+    .thLang button:hover:not(.is-active) { color: var(--fg-1); }
+
+    /* Mobile burger */
+    .thBurger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      background: none;
+      border: none;
+      padding: 4px;
+      cursor: pointer;
+      margin-left: auto;
+    }
+    .thBurger span {
+      display: block;
+      width: 20px;
+      height: 1.5px;
+      background: var(--fg-2);
+      transition: transform var(--motion-fast) var(--ease),
+                  opacity var(--motion-fast) var(--ease);
+      transform-origin: center;
+    }
+    .thBurger.is-open span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+    .thBurger.is-open span:nth-child(2) { opacity: 0; }
+    .thBurger.is-open span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+
+    /* Mobile drawer */
+    .thMobileMenu {
+      display: none;
+      position: fixed;
+      inset: 0;
+      top: 57px;
+      background: rgba(7, 7, 11, 0.97);
+      backdrop-filter: blur(16px);
+      z-index: 49;
+      flex-direction: column;
+      padding: var(--s-7) var(--gutter);
+      gap: var(--s-5);
+      border-top: 1px solid var(--border);
+    }
+    .thMobileMenu.is-open { display: flex; }
+    .thMobileMenu a {
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--fg-2);
+      text-decoration: none;
+      letter-spacing: -0.01em;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: color var(--motion-fast) var(--ease);
+    }
+    .thMobileMenu a::before {
+      content: "";
+      display: block;
+      width: 0px;
+      height: 2px;
+      background: var(--accent);
+      border-radius: 2px;
+      transition: width var(--motion) var(--ease);
+      flex-shrink: 0;
+    }
+    .thMobileMenu a:hover { color: var(--fg-1); }
+    .thMobileMenu a.is-active {
+      color: var(--fg-1);
+    }
+    .thMobileMenu a.is-active::before { width: 20px; }
+    .thMobileMenu .thLang {
+      margin-top: var(--s-4);
+      width: fit-content;
+    }
+
+    /* ── Hero ── */
+    .thHero {
+      position: relative;
+      overflow: hidden;
+    }
+    .thHero-textures {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .thHero-textures span {
+      position: absolute;
+      display: block;
+      background-size: cover;
+      background-position: center;
+      mix-blend-mode: screen;
+      opacity: 0.13;
+    }
+    /* cyan — top-right */
+    .thHero-textures span:nth-child(1) {
+      top: -10%;
+      right: -5%;
+      width: 55%;
+      height: 80%;
+      background-image: url("../../assets/texture-cyan.jpg");
+    }
+    /* violet — top-left */
+    .thHero-textures span:nth-child(2) {
+      top: 0%;
+      left: -10%;
+      width: 45%;
+      height: 60%;
+      background-image: url("../../assets/texture-violet.jpg");
+      opacity: 0.09;
+    }
+    /* amber — bottom-right */
+    .thHero-textures span:nth-child(3) {
+      bottom: -5%;
+      right: 5%;
+      width: 40%;
+      height: 50%;
+      background-image: url("../../assets/texture-amber.jpg");
+      opacity: 0.08;
+    }
+    /* teal — bottom-left */
+    .thHero-textures span:nth-child(4) {
+      bottom: 0%;
+      left: 5%;
+      width: 35%;
+      height: 45%;
+      background-image: url("../../assets/texture-teal.jpg");
+      opacity: 0.07;
+    }
+    .thHero-grid { position: relative; z-index: 1; }
+    .thHero-grid {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: var(--s-9) var(--gutter) var(--s-10);
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: var(--s-8);
+      align-items: center;
+    }
+    .thHero-text {
+      display: flex;
+      flex-direction: column;
+      gap: var(--s-5);
+    }
+    .thHero-headline {
+      font-size: 76px;
+      line-height: 84px;
+      letter-spacing: -0.025em;
+      font-weight: 600;
+      color: var(--fg-1);
+      margin: 0;
+      text-wrap: balance;
+    }
+    .thHero-headline em {
+      font-style: normal;
+      color: var(--accent);
+    }
+    .thHero-headline::after {
+      content: "_";
+      color: var(--accent);
+      margin-left: 2px;
+      animation: thBlink 1.1s steps(2, end) infinite;
+    }
+    @keyframes thBlink { 50% { opacity: 0; } }
+    .thHero-sub {
+      font-size: 18px;
+      line-height: 30px;
+      color: var(--fg-2);
+      max-width: 560px;
+      margin: 0;
+    }
+    .thHero-ctas {
+      display: flex;
+      gap: var(--s-3);
+      margin-top: var(--s-3);
+      flex-wrap: wrap;
+    }
+    .thHero-portrait {
+      position: relative;
+      width: 100%;
+      max-width: 420px;
+      aspect-ratio: 1;
+      border-radius: var(--r-4);
+      overflow: hidden;
+      box-shadow: var(--shadow-1), 0 0 80px rgba(124,92,255,0.12);
+      justify-self: end;
+    }
+    /* Violet ambient halo around portrait */
+    .thHero-portrait::before {
+      content: "";
+      position: absolute;
+      inset: -2px;
+      border-radius: calc(var(--r-4) + 2px);
+      background: linear-gradient(135deg, rgba(124,92,255,0.18), transparent 60%);
+      z-index: 1;
+      pointer-events: none;
+    }
+    .thHero-portrait img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .thHero-portrait-tag {
+      position: absolute;
+      left: 12px;
+      bottom: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(7,7,11,0.72);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      color: var(--fg-1);
+      border: 1px solid var(--border);
+    }
+
+    /* ── Stats row ── */
+    .thStats {
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-1);
+    }
+    .thStats-inner {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: var(--s-6) var(--gutter);
+      display: flex;
+      gap: 0;
+    }
+    .thStat {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 6px;
+      padding: var(--s-3) var(--s-5);
+      border-right: 1px solid var(--border);
+    }
+    .thStat:first-child { padding-left: 0; }
+    .thStat:last-child { border-right: 0; }
+    .thStat-value {
+      font-size: 34px;
+      font-weight: 600;
+      letter-spacing: -0.025em;
+      line-height: 1;
+      background: linear-gradient(135deg, var(--fg-1) 30%, var(--accent-soft) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .thStat-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--fg-3);
+    }
+
+    /* ── Buttons ── */
+    .thBtn {
+      font-family: var(--font-sans);
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 1;
+      border-radius: var(--r-2);
+      padding: 12px 18px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: background var(--motion-fast) var(--ease),
+                  color var(--motion-fast) var(--ease),
+                  border-color var(--motion-fast) var(--ease),
+                  transform var(--motion-fast) var(--ease);
+    }
+    .thBtn:active { transform: translateY(1px); }
+    .thBtn-primary { background: var(--fg-1); color: var(--bg-0); }
+    .thBtn-primary:hover { background: #fff; color: var(--bg-0); }
+    .thBtn-secondary {
+      background: transparent;
+      color: var(--fg-1);
+      border-color: var(--border-strong);
+    }
+    .thBtn-secondary:hover {
+      background: var(--bg-2);
+      border-color: var(--fg-3);
+      color: var(--fg-1);
+    }
+
+    /* ── Section frame ── */
+    .thSection { border-top: 1px solid var(--border); }
+    .thSection-inner {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: var(--s-9) var(--gutter);
+      display: flex;
+      flex-direction: column;
+      gap: var(--s-5);
+    }
+    /* Search bar */
+    .thTL-search-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: var(--s-3);
+      margin-top: var(--s-6);
+      max-width: 750px;
+      width: 100%;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .thTL-search-icon {
+      position: absolute;
+      left: var(--s-4);
+      color: rgba(255,255,255,0.3);
+      pointer-events: none;
+      flex-shrink: 0;
+    }
+    .thTL-search {
+      width: 100%;
+      height: 40px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 0 var(--s-5) 0 36px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--fg-1);
+      letter-spacing: 0.02em;
+      outline: none;
+      transition: border-color var(--motion) var(--ease), background var(--motion) var(--ease);
+    }
+    .thTL-search::placeholder { color: rgba(255,255,255,0.25); }
+    .thTL-search:focus {
+      border-color: rgba(124,92,255,0.5);
+      background: rgba(124,92,255,0.05);
+    }
+    .thTL-search-clear {
+      position: absolute;
+      right: 70px;
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.3);
+      cursor: pointer;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+    }
+    .thTL-search-clear:hover { color: var(--fg-1); }
+    .thTL-search-count {
+      position: absolute;
+      right: var(--s-4);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: rgba(124,92,255,0.7);
+      white-space: nowrap;
+      pointer-events: none;
+    }
+    .thTL-empty {
+      text-align: center;
+      padding: var(--s-8);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: rgba(255,255,255,0.25);
+    }
+    .thSection-title {
+      font-size: var(--t-h1-size);
+      line-height: var(--t-h1-line);
+      font-weight: 600;
+      letter-spacing: var(--t-h-track);
+      color: var(--fg-1);
+      max-width: 880px;
+      margin: 0;
+    }
+    .thSection-body {
+      font-size: 17px;
+      line-height: 28px;
+      color: var(--fg-2);
+      margin: 0;
+    }
+    .thEyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 16px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--fg-3);
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .thEyebrow::before {
+      content: "";
+      display: block;
+      width: 20px;
+      height: 1px;
+      background: var(--accent);
+      flex-shrink: 0;
+    }
+
+    /* ── Pill / dot ── */
+    .thPill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 14px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      color: var(--fg-2);
+      background: var(--bg-1);
+      width: fit-content;
+    }
+    .thDot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--fg-3);
+      display: inline-block;
+      flex-shrink: 0;
+    }
+    .thDot-success {
+      background: var(--success);
+      box-shadow: 0 0 8px rgba(63,209,141,0.5);
+    }
+
+    /* ── Chip (partagé) ── */
+    .thChip {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 4px 9px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--fg-3);
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+
+    /* ── Timeline ── */
+    .thTimeline-wrap {
+      position: relative;
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: var(--s-7) var(--gutter) var(--s-10);
+    }
+    /* spine */
+    .thTimeline-wrap::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: var(--border);
+      transform: translateX(-50%);
+    }
+    /* animated violet progress line */
+    .thTL-progress {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      width: 1px;
+      height: 0;
+      background: linear-gradient(to bottom, var(--accent), var(--accent-soft));
+      transform: translateX(-50%);
+      z-index: 1;
+      pointer-events: none;
+      transition: height 0.12s linear;
+    }
+
+    /* each row */
+    .thTL-item {
+      display: grid;
+      grid-template-columns: 1fr 80px 1fr;
+      align-items: center;
+      margin-bottom: var(--s-9);
+      position: relative;
+    }
+    .thTL-item:last-child { margin-bottom: 0; }
+
+    /* node */
+    .thTL-node {
+      grid-column: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      z-index: 2;
+    }
+    .thTL-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      background: var(--bg-0);
+      flex-shrink: 0;
+      transition: border-color var(--motion) var(--ease),
+                  box-shadow var(--motion) var(--ease),
+                  background var(--motion) var(--ease);
+    }
+    .thTL-node.is-active .thTL-dot {
+      border-color: var(--accent);
+      background: var(--accent-deep);
+      box-shadow: 0 0 0 5px rgba(124,92,255,0.12), 0 0 20px rgba(124,92,255,0.35);
+    }
+    .thTL-year {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      color: var(--fg-3);
+      white-space: nowrap;
+    }
+    .thTL-node.is-active .thTL-year { color: var(--accent-soft); }
+
+    /* card */
+    .thTL-card {
+      background: var(--bg-1);
+      border: 1px solid var(--border);
+      border-radius: var(--r-3);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      text-decoration: none;
+      color: inherit;
+      transition: border-color var(--motion) var(--ease),
+                  box-shadow var(--motion) var(--ease),
+                  opacity var(--motion-slow) var(--ease),
+                  transform var(--motion-slow) var(--ease);
+    }
+    .thTL-card:hover {
+      border-color: rgba(124,92,255,0.40);
+      box-shadow: 0 0 0 1px rgba(124,92,255,0.1), 0 12px 40px rgba(0,0,0,0.5);
+    }
+    .thTL-card:hover .thTL-title { color: var(--accent-soft); }
+
+    /* left item: card col1, node col2, spacer col3 */
+    .thTL-item-left .thTL-card    { grid-column: 1; }
+    .thTL-item-left .thTL-node    { grid-column: 2; }
+    .thTL-item-left .thTL-spacer  { grid-column: 3; }
+
+    /* right item: spacer col1, node col2, card col3 */
+    .thTL-item-right .thTL-spacer { grid-column: 1; }
+    .thTL-item-right .thTL-node   { grid-column: 2; }
+    .thTL-item-right .thTL-card   { grid-column: 3; }
+
+    /* slide-in states */
+    .thTL-item-left  .thTL-card { opacity: 0; transform: translateX(-40px); }
+    .thTL-item-right .thTL-card { opacity: 0; transform: translateX(40px); }
+    .thTL-card.is-visible       { opacity: 1; transform: translateX(0); }
+
+    /* card image */
+    .thTL-img {
+      height: 150px;
+      position: relative;
+      overflow: hidden;
+      background: var(--bg-2);
+    }
+    .thTL-img-texture {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      mix-blend-mode: screen;
+      opacity: 0.28;
+      transition: opacity var(--motion) var(--ease);
+    }
+    .thTL-card:hover .thTL-img-texture { opacity: 0.42; }
+    .thTL-img-veil {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(7,7,11,0.15) 0%, rgba(7,7,11,0.75) 100%);
+    }
+    .thTL-img--has-screen .thTL-img-veil {
+      background: linear-gradient(180deg, rgba(7,7,11,0.65) 0%, rgba(7,7,11,0.0) 65%);
+    }
+    .thTL-img-screen {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 84%;
+      height: 92%;
+      background-size: cover;
+      background-position: top center;
+      border-radius: 8px 8px 0 0;
+      box-shadow: 0 -8px 32px rgba(0,0,0,0.55);
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 38%);
+      mask-image: linear-gradient(to bottom, transparent 0%, black 38%);
+      transition: transform var(--motion) var(--ease);
+      z-index: 1;
+    }
+    .thTL-card:hover .thTL-img-screen {
+      transform: translateX(-50%) translateY(-6px);
+    }
+    /* Colorways: black bg, hide texture always */
+    .thTL-img--has-colorways .thTL-img-texture,
+    .thTL-card:hover .thTL-img--has-colorways .thTL-img-texture { opacity: 0 !important; }
+    .thTL-img--has-colorways { background: #07070B; }
+    /* Dark bg override */
+    .thTL-img--dark-bg { background: #07070B; }
+    .thTL-img--dark-bg .thTL-img-texture,
+    .thTL-card:hover .thTL-img--dark-bg .thTL-img-texture { opacity: 0 !important; }
+    .thTL-img--dark-bg .thTL-img-screen {
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      left: 0;
+      bottom: auto;
+      transform: none;
+      border-radius: 0;
+      background-size: cover;
+      background-position: center center;
+      -webkit-mask-image: none;
+      mask-image: none;
+      box-shadow: none;
+    }
+    .thTL-card:hover .thTL-img--dark-bg .thTL-img-screen { transform: none; }
+    /* iframe live preview */
+    .thTL-img--has-iframe .thTL-img-texture,
+    .thTL-card:hover .thTL-img--has-iframe .thTL-img-texture { opacity: 0 !important; }
+    .thTL-img--has-iframe { background: #07070B; }
+    .thTL-img--has-iframe .thTL-img-veil { display: none; }
+    .thTL-iframe-wrap {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      border-radius: inherit;
+    }
+    .thTL-iframe-el { pointer-events: none; }
+    .thTL-card:hover .thTL-iframe-el { pointer-events: auto; }
+    /* Contain mode — logo/icon centered, not cropped */
+    .thTL-img--contain .thTL-img-screen {
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      left: 0;
+      bottom: auto;
+      transform: none;
+      border-radius: 0;
+      background-size: contain;
+      background-position: center center;
+      background-repeat: no-repeat;
+      -webkit-mask-image: none;
+      mask-image: none;
+      box-shadow: none;
+    }
+    .thTL-card:hover .thTL-img--contain .thTL-img-screen { transform: none; }
+    /* Colorways fan */
+    .thTL-img-colorways {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 1;
+    }
+    .thTL-img-colorways img {
+      width: 42%;
+      height: 95%;
+      object-fit: contain;
+      object-position: bottom center;
+      filter: drop-shadow(0 6px 20px rgba(0,0,0,0.6));
+      transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .thTL-img-colorways img:nth-child(1) {
+      transform: translateX(24px) rotate(-10deg);
+      z-index: 1;
+    }
+    .thTL-img-colorways img:nth-child(2) {
+      transform: translateY(-10px);
+      z-index: 3;
+    }
+    .thTL-img-colorways img:nth-child(3) {
+      transform: translateX(-24px) rotate(10deg);
+      z-index: 2;
+    }
+    .thTL-card:hover .thTL-img-colorways img:nth-child(1) {
+      transform: translateX(38px) rotate(-14deg) translateY(-6px);
+    }
+    .thTL-card:hover .thTL-img-colorways img:nth-child(2) {
+      transform: translateY(-16px);
+    }
+    .thTL-card:hover .thTL-img-colorways img:nth-child(3) {
+      transform: translateX(-38px) rotate(14deg) translateY(-6px);
+    }
+    .thTL-img--has-screen:has(img.thTL-img-screen--svg) .thTL-img-veil,
+    .thTL-img--has-screen:has(video.thTL-img-screen--video) .thTL-img-veil { display: none; }
+    img.thTL-img-screen--svg,
+    video.thTL-img-screen--video {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      -webkit-mask-image: none;
+      mask-image: none;
+      transform: none;
+      transition: opacity var(--motion) var(--ease);
+    }
+    .thTL-card:hover img.thTL-img-screen--svg,
+    .thTL-card:hover video.thTL-img-screen--video {
+      opacity: 1;
+      transform: none;
+    }
+    .thTL-img-label {
+      position: absolute;
+      bottom: var(--s-4);
+      left: var(--s-4);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(244,244,248,0.45);
+    }
+    .thTL-live-badge {
+      position: absolute;
+      top: var(--s-3);
+      right: var(--s-3);
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      background: rgba(7,7,11,0.72);
+      border: 1px solid var(--border);
+      border-radius: var(--r-1);
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--fg-2);
+      backdrop-filter: blur(6px);
+      pointer-events: none;
+      transition: color var(--motion-fast) var(--ease), border-color var(--motion-fast) var(--ease);
+    }
+    .thTL-live-badge-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--success);
+      flex-shrink: 0;
+      animation: livePulse 2s ease-in-out infinite;
+    }
+    @keyframes livePulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
+    }
+    .thTL-live-hint {
+      position: absolute;
+      bottom: var(--s-3);
+      left: 50%;
+      transform: translateX(-50%) translateY(4px);
+      z-index: 10;
+      padding: 3px 10px;
+      background: rgba(7,7,11,0.82);
+      border: 1px solid var(--border);
+      border-radius: var(--r-1);
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent-soft);
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity var(--motion) var(--ease), transform var(--motion) var(--ease);
+    }
+    .thTL-card:hover .thTL-live-hint {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* card body */
+    .thTL-body {
+      padding: var(--s-5);
+      display: flex;
+      flex-direction: column;
+      gap: var(--s-3);
+    }
+    .thTL-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--fg-3);
+    }
+    .thTL-track-tag {
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: var(--r-1);
+      padding: 3px 7px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.07em;
+      color: var(--fg-3);
+    }
+    .thTL-status-shipped   { color: var(--success); }
+    .thTL-status-beta      { color: #7C5CFF; }
+    .thTL-status-research  { color: var(--warn); }
+    .thTL-status-inprogress{ color: var(--warn); }
+    .thTL-title {
+      font-size: 20px;
+      line-height: 26px;
+      font-weight: 600;
+      color: var(--fg-1);
+      letter-spacing: -0.01em;
+      margin: 0;
+      transition: color var(--motion-fast) var(--ease);
+    }
+    .thTL-card:hover .thTL-title { color: var(--accent-soft); }
+    .thTL-summary {
+      font-size: 13px;
+      line-height: 20px;
+      color: var(--fg-1);
+      margin: 0;
+      font-weight: 500;
+      text-align: justify;
+    }
+    .thTL-detail {
+      font-size: 13px;
+      line-height: 20px;
+      color: var(--fg-2);
+      margin: 0;
+      padding-top: var(--s-2);
+      border-top: 1px solid var(--border);
+      text-align: justify;
+    }
+    .thTL-tags { display: flex; gap: 5px; flex-wrap: wrap; }
+    .thTL-footer {
+      margin-top: var(--s-2);
+      padding-top: var(--s-4);
+      border-top: 1px solid var(--border);
+    }
+    .thTL-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--fg-3);
+      text-decoration: none;
+      transition: color var(--motion-fast) var(--ease);
+    }
+    .thTL-cta:hover { color: var(--accent-soft); }
+
+    /* ── Responsive timeline ── */
+    @media (max-width: 960px) {
+      .thTimeline-wrap::before { left: 20px; }
+      .thTL-progress            { left: 20px; }
+      .thTL-item {
+        grid-template-columns: 44px 1fr !important;
+      }
+      .thTL-item-left .thTL-card,
+      .thTL-item-right .thTL-spacer { display: none; }
+      .thTL-item-left .thTL-node,
+      .thTL-item-right .thTL-node   { grid-column: 1 !important; }
+      .thTL-item-left .thTL-spacer,
+      .thTL-item-right .thTL-card   { grid-column: 2 !important; }
+      .thTL-item-right .thTL-card   { transform: translateX(24px); }
+      .thTL-card.is-visible         { transform: translateX(0) !important; }
+    }
+
+    /* ── Skills ── */
+    /* ── Skills — Two-panel datasheet ── */
+    .thSkillsSplit {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      margin-top: var(--s-6);
+      border: 1px solid var(--border);
+      border-radius: var(--r-3);
+      overflow: hidden;
+    }
+    .thSkillsRule { display: none; }
+    .thSkillCol {
+      --col-accent: #7C5CFF;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      padding: var(--s-7) var(--s-6) var(--s-6);
+      overflow: hidden;
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.6s var(--ease), transform 0.6s var(--ease);
+    }
+    .thSkillCol::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--col-accent);
+      opacity: 0.45;
+      transition: opacity var(--motion) var(--ease);
+    }
+    .thSkillCol:hover::before { opacity: 1; }
+    .thSkillCol-left  { --col-accent: #6FC9D6; border-right: 1px solid var(--border); }
+    .thSkillCol-right { --col-accent: #7C5CFF; }
+    .thSkillCol.is-visible { opacity: 1; transform: translateY(0); }
+    .thSkillCol-idx {
+      position: absolute;
+      top: var(--s-5);
+      right: var(--s-5);
+      font-family: var(--font-mono);
+      font-size: 88px;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: -0.05em;
+      color: var(--col-accent);
+      opacity: 0.07;
+      pointer-events: none;
+      user-select: none;
+    }
+    .thSkillCol-header {
+      position: relative;
+      margin-bottom: var(--s-5);
+      padding-bottom: var(--s-4);
+      border-bottom: 1px solid var(--border);
+    }
+    .thSkillCol-title {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--fg-1);
+      margin: 0;
+    }
+    .thSkillList { margin: 0; padding: 0; display: flex; flex-direction: column; }
+    .thSkillRow {
+      display: grid;
+      grid-template-columns: 130px 1fr;
+      gap: var(--s-4);
+      padding: 13px var(--s-2);
+      border-top: 1px solid var(--border);
+      border-radius: var(--r-1);
+      opacity: 0;
+      transform: translateX(-10px);
+      transition: opacity 0.3s var(--ease), transform 0.3s var(--ease), background 0.15s;
+    }
+    .thSkillCol-right .thSkillRow { transform: translateX(10px); }
+    .thSkillRow.is-visible { opacity: 1; transform: translateX(0); }
+    .thSkillRow:hover {
+      background: color-mix(in srgb, var(--col-accent) 6%, transparent);
+    }
+    .thSkillRow dt {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--col-accent);
+      opacity: 0.75;
+      padding-top: 6px;
+      line-height: 1.5;
+    }
+    .thSkillRow dd {
+      margin: 0;
+    }
+
+    /* ── Skill chips ── */
+    .thSkillChips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      padding: 2px 0 4px;
+    }
+    .thSkillChip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 9px 3px 6px;
+      border: 1px solid var(--border);
+      border-radius: var(--r-1);
+      background: var(--bg-2);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--fg-2);
+      white-space: nowrap;
+      transition: border-color var(--motion-fast) var(--ease),
+                  color var(--motion-fast) var(--ease),
+                  background var(--motion-fast) var(--ease);
+    }
+    .thSkillChip:hover {
+      border-color: var(--border-strong);
+      color: var(--fg-1);
+      background: var(--bg-3);
+    }
+    .thSkillChip i {
+      font-size: 14px;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .thSkillChip-note {
+      font-size: 9px;
+      color: var(--fg-3);
+      letter-spacing: 0.04em;
+      font-style: italic;
+    }
+    .thSkillMore {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 9px;
+      border: 1px dashed var(--border);
+      border-radius: var(--r-1);
+      background: transparent;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--fg-3);
+      cursor: pointer;
+      transition: border-color var(--motion-fast) var(--ease), color var(--motion-fast) var(--ease);
+    }
+    .thSkillMore:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* ── Project detail — sticky scroll ── */
+    .thProjDetail {
+      border-top: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .thProjDetail-header {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: var(--s-9) var(--gutter) var(--s-7);
+      display: flex;
+      flex-direction: column;
+      gap: var(--s-4);
+    }
+    .thProjDetail-inner {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 0 var(--gutter) var(--s-10);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--s-8);
+      align-items: start;
+    }
+
+    /* sticky visual */
+    .thProjVisual {
+      position: sticky;
+      top: 80px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--s-5);
+    }
+    .thProjImg-wrap {
+      position: relative;
+      width: 100%;
+    }
+    .thProjImg {
+      width: 100%;
+      object-fit: contain;
+      display: block;
+      transition: transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1),
+                  filter 0.8s cubic-bezier(0.2, 0.7, 0.2, 1);
+      transform: perspective(1000px) rotateY(-6deg) scale(1);
+      filter: brightness(1);
+    }
+    /* chapter-driven states */
+    .thProjVisual[data-active="1"] .thProjImg {
+      transform: perspective(1000px) rotateY(0deg) scale(1.08);
+      filter: brightness(1.05);
+    }
+    .thProjVisual[data-active="2"] .thProjImg {
+      transform: perspective(1000px) rotateY(6deg) scale(1.05);
+      filter: brightness(1.08) saturate(1.15);
+    }
+    .thProjVisual[data-active="3"] .thProjImg {
+      transform: perspective(1000px) rotateY(-4deg) scale(1.1);
+      filter: brightness(1.12);
+    }
+
+    /* floating badge */
+    .thProjBadge {
+      display: flex;
+      align-items: center;
+      gap: var(--s-3);
+      padding: 10px 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--r-2);
+      background: var(--bg-1);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      color: var(--fg-2);
+      width: fit-content;
+      align-self: center;
+    }
+    .thProjBadge-val {
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, var(--fg-1) 30%, var(--accent-soft) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* heartbeat SVG */
+    .thHeartbeat {
+      width: 100%;
+      height: 40px;
+      opacity: 0.35;
+    }
+    .thHeartbeat-line {
+      stroke-dasharray: 400;
+      stroke-dashoffset: 400;
+      animation: thHeartDraw 2s var(--ease) infinite;
+    }
+    @keyframes thHeartDraw {
+      0%   { stroke-dashoffset: 400; opacity: 1; }
+      70%  { stroke-dashoffset: 0;   opacity: 1; }
+      90%  { stroke-dashoffset: 0;   opacity: 0; }
+      100% { stroke-dashoffset: 400; opacity: 0; }
+    }
+
+    /* scrolling chapters */
+    .thProjChapters {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .thProjChapter {
+      min-height: 60vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: var(--s-4);
+      padding: var(--s-8) 0;
+      border-top: 1px solid var(--border);
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.6s var(--ease), transform 0.6s var(--ease);
+    }
+    .thProjChapter:first-child { border-top: 0; }
+    .thProjChapter.is-visible { opacity: 1; transform: translateY(0); }
+    .thProjChapter-title {
+      font-size: 28px;
+      line-height: 36px;
+      font-weight: 600;
+      color: var(--fg-1);
+      letter-spacing: -0.015em;
+      margin: 0;
+    }
+    .thProjChapter-body {
+      font-size: 16px;
+      line-height: 26px;
+      color: var(--fg-2);
+      margin: 0;
+      max-width: 480px;
+    }
+    .thProjChapter-specs {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin-top: var(--s-3);
+    }
+    .thProjChapter-spec {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: var(--s-4);
+      padding: 10px 0;
+      border-top: 1px solid var(--border);
+      font-size: 14px;
+    }
+    .thProjChapter-spec dt {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--fg-3);
+      padding-top: 2px;
+    }
+    .thProjChapter-spec dd { margin: 0; color: var(--fg-1); }
+
+    /* responsive */
+    @media (max-width: 960px) {
+      .thProjDetail-inner { grid-template-columns: 1fr; gap: var(--s-6); }
+      .thProjVisual { position: relative; top: 0; }
+      .thProjChapter { min-height: auto; }
+    }
+
+    /* ── About ── */
+    .thAbout-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--s-9);
+      align-items: start;
+      margin-top: var(--s-3);
+    }
+    .thAbout-text { display: flex; flex-direction: column; gap: var(--s-5); }
+    .thAbout-body {
+      border-left: 1px solid var(--accent);
+      padding-left: var(--s-5);
+      margin: 0;
+      font-size: 16px;
+      line-height: 26px;
+      color: var(--fg-2);
+      max-width: 680px;
+    }
+    .thAbout-facts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--s-5);
+      padding-left: calc(var(--s-5) + 1px);
+    }
+    .thAbout-fact {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      color: var(--fg-2);
+    }
+    .thAbout-fact svg { color: var(--accent); flex-shrink: 0; }
+
+    /* ── Contact ── */
+    .thContact { background: linear-gradient(180deg, var(--bg-0) 0%, var(--bg-1) 100%); }
+    .thContact-row {
+      display: flex;
+      align-items: center;
+      gap: var(--s-4);
+      margin-top: var(--s-3);
+      flex-wrap: wrap;
+    }
+    .thContact-mail {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      color: var(--fg-2);
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      padding: 10px 14px;
+      border-radius: var(--r-2);
+    }
+    .thContact-socials {
+      display: flex;
+      gap: var(--s-5);
+      margin-top: var(--s-5);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 0.04em;
+    }
+    .thContact-socials a {
+      color: var(--fg-2);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: color var(--motion-fast) var(--ease);
+    }
+    .thContact-socials a:hover { color: var(--accent-soft); }
+
+    /* ── Scroll to top ── */
+    .thScrollTop {
+      position: fixed;
+      bottom: 32px;
+      right: 32px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--bg-1);
+      border: 1px solid var(--border);
+      color: var(--fg-2);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 40;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity var(--motion) var(--ease),
+                  transform var(--motion) var(--ease),
+                  background var(--motion-fast) var(--ease),
+                  border-color var(--motion-fast) var(--ease),
+                  color var(--motion-fast) var(--ease);
+      pointer-events: none;
+    }
+    .thScrollTop.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+    .thScrollTop:hover {
+      background: var(--bg-2);
+      border-color: var(--accent);
+      color: var(--accent-soft);
+    }
+    .thScrollTop:active { transform: translateY(2px); }
+
+    /* ── Footer ── */
+    .thFooter {
+      border-top: 1px solid var(--border);
+      background: var(--bg-0);
+    }
+    .thFooter-inner {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: var(--s-5) var(--gutter);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      color: var(--fg-3);
+    }
+    .thFooter-links {
+      display: flex;
+      gap: var(--s-5);
+    }
+    .thFooter-links a {
+      color: var(--fg-3);
+      text-decoration: none;
+      transition: color var(--motion-fast) var(--ease);
+    }
+    .thFooter-links a:hover { color: var(--fg-2); }
+
+    /* ── Responsive ── */
+    @media (max-width: 960px) {
+      .thHero-grid {
+        grid-template-columns: 1fr;
+        gap: var(--s-7);
+        padding-bottom: var(--s-9);
+      }
+      .thHero-portrait {
+        max-width: 320px;
+        justify-self: start;
+      }
+      .thHero-headline { font-size: 48px; line-height: 54px; }
+      .thHero-sub { font-size: 16px; line-height: 26px; }
+      .thNav-links { display: none; }
+      .thBurger { display: flex; }
+      .thStats-inner { flex-wrap: wrap; gap: 0; }
+      .thStat { border-right: 0; border-bottom: 1px solid var(--border); flex: 1 1 45%; padding: var(--s-4) var(--s-3); }
+      .thSkillsSplit { grid-template-columns: 1fr; }
+      .thSkillCol-left { border-right: none; border-bottom: 1px solid var(--border); }
+      .thSkillsRule { display: none; }
+      .thPGrid { grid-template-columns: 1fr; }
+      .thPCard.is-featured { grid-column: span 1; }
+      .thSection-title { font-size: 32px; line-height: 38px; }
+      .thAbout-grid { grid-template-columns: 1fr; gap: var(--s-6); }
+    }
+
+    @media (max-width: 600px) {
+      .thNav-inner { padding: 14px var(--s-5); gap: var(--s-4); }
+      .thHero-grid { padding: var(--s-7) var(--s-5) var(--s-9); }
+      .thSection-inner { padding: var(--s-7) var(--s-5); }
+      .thFooter-inner { flex-direction: column; gap: var(--s-3); text-align: center; }
+      .thContact-row { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <div id="th-mouse-glow"></div>
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    /* ───────────────────────────────────────────
+       COPY — EN / FR dictionary
+    ─────────────────────────────────────────── */
+    const COPY = {
+      en: {
+        nav: { work: "Work", skills: "Skills", about: "About", contact: "Contact" },
+        hero: {
+          kicker: "HARDWARE · FIRMWARE · FULLSTACK · PARIS",
+          headline: "I design the hardware, write the firmware, ship the product.",
+          sub: "From PCB schematic to deployed app — embedded, MedTech, fullstack web. Based in Paris, available remote worldwide.",
+          cta1: "Get in touch",
+          cta2: "Download CV",
+        },
+        stats: [
+          { value: "8", label: "Projects shipped" },
+          { value: "2", label: "Years freelance" },
+          { value: "4", label: "Clients" },
+          { value: "200+", label: "Patients validated" },
+        ],
+        about: {
+          eyebrow: "ABOUT",
+          title: "Hardware, firmware, fullstack — three crafts, shipped products.",
+          body: "I design PCBs, write the firmware, and build the web products around them. From schematic to deployed app. Based in Paris, available in French and English.",
+          pill: "Available · Immediately",
+          facts: [
+            { label: "Paris · on-site" },
+            { label: "Remote · anywhere" },
+            { label: "FR / EN" },
+          ],
+          location: "Paris, France",
+        },
+        skills: {
+          eyebrow: "WHAT I BUILD",
+          title: "Two stacks, both in production.",
+          embedded: {
+            title: "Embedded Systems",
+            items: [
+              { k: "Languages", chips: [
+                { name: "C",      icon: "devicon-c-plain colored" },
+                { name: "C++",    icon: "devicon-cplusplus-plain colored" },
+                { name: "Python", icon: "devicon-python-plain colored" },
+              ]},
+              { k: "MCU / SoC", chips: [
+                { name: "ESP32" },
+                { name: "nRF5340" },
+                { name: "STM32" },
+                { name: "ARM Cortex-M" },
+              ]},
+              { k: "Firmware", chips: [
+                { name: "FreeRTOS" },
+                { name: "Zephyr RTOS" },
+                { name: "ESP-IDF" },
+                { name: "Nordic SDK" },
+                { name: "Bare-metal" },
+              ]},
+              { k: "Hardware", chips: [
+                { name: "PCB Design" },
+                { name: "KiCad" },
+                { name: "Altium" },
+                { name: "EasyEDA" },
+              ]},
+              { k: "Protocols", chips: [
+                { name: "BLE 5.0" },
+                { name: "SPI" },
+                { name: "I²C" },
+                { name: "UART" },
+                { name: "CAN" },
+                { name: "MQTT" },
+                { name: "USB" },
+                { name: "MIPI CSI-2" },
+                { name: "TCP/IP" },
+              ]},
+              { k: "Linux", chips: [
+                { name: "Yocto" },
+                { name: "Buildroot" },
+                { name: "Device drivers" },
+                { name: "BSP" },
+                { name: "Cross-compile" },
+              ]},
+              { k: "Debug & Build", chips: [
+                { name: "JTAG" },
+                { name: "GDB" },
+                { name: "CMake", icon: "devicon-cmake-plain colored" },
+                { name: "PlatformIO" },
+                { name: "Oscilloscope" },
+                { name: "Logic Analyzer" },
+              ]},
+              { k: "Signal & ML", chips: [
+                { name: "DSP" },
+                { name: "HRV" },
+                { name: "ECG / PPG" },
+                { name: "TensorFlow Lite", icon: "devicon-tensorflow-original colored" },
+                { name: "Computer Vision" },
+              ]},
+              { k: "Desktop", chips: [
+                { name: "Qt", icon: "devicon-qt-original colored" },
+                { name: "QML" },
+              ]},
+              { k: "Regulatory", chips: [
+                { name: "IEC 62304" },
+                { name: "ISO 14971 IIa" },
+                { name: "Cycle en V" },
+                { name: "CAPA" },
+                { name: "Test plans" },
+                { name: "Clinical trials" },
+                { name: "Unit tests" },
+              ]},
+            ],
+          },
+          web: {
+            title: "Web · Fullstack",
+            items: [
+              { k: "Frontend", chips: [
+                { name: "React 19",   icon: "devicon-react-original colored" },
+                { name: "Next.js",    icon: "devicon-nextjs-plain colored" },
+                { name: "Vite",       icon: "devicon-vitejs-plain colored" },
+                { name: "TypeScript", icon: "devicon-typescript-plain colored" },
+                { name: "TanStack" },
+              ]},
+              { k: "Backend", chips: [
+                { name: "Node.js",         icon: "devicon-nodejs-plain colored" },
+                { name: "Firebase",        icon: "devicon-firebase-plain colored" },
+                { name: "Supabase",        icon: "devicon-supabase-plain colored" },
+                { name: "REST APIs" },
+                { name: "SQL / NoSQL" },
+              ]},
+              { k: "Cloud & APIs", chips: [
+                { name: "Firebase / GCP",  icon: "devicon-firebase-plain colored" },
+                { name: "AWS S3",          icon: "devicon-amazonwebservices-plain colored" },
+                { name: "Gemini 2.0" },
+                { name: "Vertex AI" },
+                { name: "OpenAI" },
+                { name: "RAG" },
+                { name: "Gmail API" },
+                { name: "Google Calendar" },
+                { name: "OAuth2" },
+                { name: "Pub/Sub" },
+              ]},
+              { k: "Mobile", chips: [
+                { name: "Flutter", icon: "devicon-flutter-plain colored" },
+                { name: "Dart",    icon: "devicon-dart-plain colored" },
+                { name: "iOS",     icon: "devicon-apple-original colored" },
+                { name: "Android", icon: "devicon-android-plain colored" },
+              ]},
+              { k: "Infra", chips: [
+                { name: "AWS",            icon: "devicon-amazonwebservices-plain colored" },
+                { name: "Vercel",         icon: "devicon-vercel-plain colored" },
+                { name: "Cloudflare",     icon: "devicon-cloudflare-plain colored" },
+                { name: "GitHub Actions", icon: "devicon-github-original colored" },
+                { name: "Docker",         icon: "devicon-docker-plain colored" },
+                { name: "CI/CD" },
+              ]},
+              { k: "Tooling", chips: [
+                { name: "Jira",      icon: "devicon-jira-plain colored" },
+                { name: "Puppeteer" },
+                { name: "Agile / Scrum" },
+              ]},
+            ],
+          },
+        },
+        work: {
+          eyebrow: "SELECTED WORK",
+          title: "Eight projects, eight contexts.",
+        },
+        contact: {
+          eyebrow: "CONTACT",
+          title: "If you're hiring or shipping, get in touch.",
+          body: "I read every message. I reply within two business days. For NDA / contract terms, attach them and I'll respond with a calendar link.",
+          mail: "tom.huyghe@orange.fr",
+          cta: "Write me",
+        },
+        footer: "© 2026 Tom Huyghe · Paris",
+      },
+      fr: {
+        nav: { work: "Projets", skills: "Compétences", about: "À propos", contact: "Contact" },
+        hero: {
+          kicker: "HARDWARE · FIRMWARE · FULLSTACK · PARIS",
+          headline: "Je conçois l'électronique, j'écris le firmware, je livre le produit.",
+          sub: "Du schéma PCB à l'application déployée — embarqué, MedTech, web fullstack. Basé à Paris, disponible partout en remote.",
+          cta1: "Me contacter",
+          cta2: "Télécharger CV",
+        },
+        stats: [
+          { value: "8", label: "Projets livrés" },
+          { value: "2", label: "Ans en freelance" },
+          { value: "4", label: "Clients" },
+          { value: "200+", label: "Patients validés" },
+        ],
+        about: {
+          eyebrow: "À PROPOS",
+          title: "Hardware, firmware, fullstack — trois métiers, des projets en prod.",
+          body: "Je conçois des cartes électroniques, j'écris le firmware, et je développe les produits web autour. Du schématique à l'app déployée. Basé à Paris, disponible en FR et EN.",
+          pill: "Disponible · Immédiatement",
+          facts: [
+            { label: "Paris · présentiel" },
+            { label: "Remote · partout" },
+            { label: "FR / EN" },
+          ],
+          location: "Paris, France",
+        },
+        skills: {
+          eyebrow: "CE QUE JE CONSTRUIS",
+          title: "Deux stacks, les deux en production.",
+          embedded: {
+            title: "Systèmes embarqués",
+            items: [
+              { k: "Langages", chips: [
+                { name: "C",      icon: "devicon-c-plain colored" },
+                { name: "C++",    icon: "devicon-cplusplus-plain colored" },
+                { name: "Python", icon: "devicon-python-plain colored" },
+              ]},
+              { k: "MCU / SoC", chips: [
+                { name: "ESP32" },
+                { name: "nRF5340" },
+                { name: "STM32" },
+                { name: "ARM Cortex-M" },
+              ]},
+              { k: "Firmware", chips: [
+                { name: "FreeRTOS" },
+                { name: "Zephyr RTOS" },
+                { name: "ESP-IDF" },
+                { name: "Nordic SDK" },
+                { name: "Bare-metal" },
+              ]},
+              { k: "Hardware", chips: [
+                { name: "Conception PCB" },
+                { name: "KiCad" },
+                { name: "Altium" },
+                { name: "EasyEDA" },
+              ]},
+              { k: "Protocoles", chips: [
+                { name: "BLE 5.0" },
+                { name: "SPI" },
+                { name: "I²C" },
+                { name: "UART" },
+                { name: "CAN" },
+                { name: "MQTT" },
+                { name: "USB" },
+                { name: "MIPI CSI-2" },
+                { name: "TCP/IP" },
+              ]},
+              { k: "Linux", chips: [
+                { name: "Yocto" },
+                { name: "Buildroot" },
+                { name: "Device drivers" },
+                { name: "BSP" },
+                { name: "Cross-compile" },
+              ]},
+              { k: "Debug & Build", chips: [
+                { name: "JTAG" },
+                { name: "GDB" },
+                { name: "CMake", icon: "devicon-cmake-plain colored" },
+                { name: "PlatformIO" },
+                { name: "Oscilloscope" },
+                { name: "Analyseur logique" },
+              ]},
+              { k: "Signal & ML", chips: [
+                { name: "DSP" },
+                { name: "HRV" },
+                { name: "ECG / PPG" },
+                { name: "TensorFlow Lite", icon: "devicon-tensorflow-original colored" },
+                { name: "Computer Vision" },
+              ]},
+              { k: "Desktop", chips: [
+                { name: "Qt", icon: "devicon-qt-original colored" },
+                { name: "QML" },
+              ]},
+              { k: "Réglementaire", chips: [
+                { name: "IEC 62304" },
+                { name: "ISO 14971 IIa" },
+                { name: "Cycle en V" },
+                { name: "CAPA" },
+                { name: "Plans de test" },
+                { name: "Essais cliniques" },
+                { name: "Tests unitaires" },
+              ]},
+            ],
+          },
+          web: {
+            title: "Web · Fullstack",
+            items: [
+              { k: "Frontend", chips: [
+                { name: "React 19",   icon: "devicon-react-original colored" },
+                { name: "Next.js",    icon: "devicon-nextjs-plain colored" },
+                { name: "Vite",       icon: "devicon-vitejs-plain colored" },
+                { name: "TypeScript", icon: "devicon-typescript-plain colored" },
+                { name: "TanStack" },
+              ]},
+              { k: "Backend", chips: [
+                { name: "Node.js",   icon: "devicon-nodejs-plain colored" },
+                { name: "Firebase",  icon: "devicon-firebase-plain colored" },
+                { name: "Supabase",  icon: "devicon-supabase-plain colored" },
+                { name: "REST APIs" },
+                { name: "SQL / NoSQL" },
+              ]},
+              { k: "Cloud & IA", chips: [
+                { name: "Firebase / GCP", icon: "devicon-firebase-plain colored" },
+                { name: "AWS S3",         icon: "devicon-amazonwebservices-plain colored" },
+                { name: "Gemini 2.0" },
+                { name: "Vertex AI" },
+                { name: "OpenAI" },
+                { name: "RAG" },
+                { name: "Gmail API" },
+                { name: "Google Calendar" },
+                { name: "OAuth2" },
+                { name: "Pub/Sub" },
+              ]},
+              { k: "Mobile", chips: [
+                { name: "Flutter", icon: "devicon-flutter-plain colored" },
+                { name: "Dart",    icon: "devicon-dart-plain colored" },
+                { name: "iOS",     icon: "devicon-apple-original colored" },
+                { name: "Android", icon: "devicon-android-plain colored" },
+              ]},
+              { k: "Infra", chips: [
+                { name: "AWS",            icon: "devicon-amazonwebservices-plain colored" },
+                { name: "Vercel",         icon: "devicon-vercel-plain colored" },
+                { name: "Cloudflare",     icon: "devicon-cloudflare-plain colored" },
+                { name: "GitHub Actions", icon: "devicon-github-original colored" },
+                { name: "Docker",         icon: "devicon-docker-plain colored" },
+                { name: "CI/CD" },
+              ]},
+              { k: "Outils", chips: [
+                { name: "Jira",      icon: "devicon-jira-plain colored" },
+                { name: "Puppeteer" },
+                { name: "Agile / Scrum" },
+              ]},
+            ],
+          },
+        },
+        work: {
+          eyebrow: "PROJETS SÉLECTIONNÉS",
+          title: "Huit projets, huit contextes.",
+        },
+        contact: {
+          eyebrow: "CONTACT",
+          title: "Vous recrutez ou vous livrez. Écrivez-moi.",
+          body: "Je lis chaque message. Je réponds sous deux jours ouvrés. Pour les NDA / conditions de mission, joignez-les et je reviens avec un lien de calendrier.",
+          mail: "tom.huyghe@orange.fr",
+          cta: "M'écrire",
+        },
+        footer: "© 2026 Tom Huyghe · Paris",
+      },
+    };
+
+    /* ───────────────────────────────────────────
+       PROJECTS
+    ─────────────────────────────────────────── */
+    const PROJECTS = [
+      {
+        id: "brooklyn",
+        name: "BROOKLYN INTELLIGENCE",
+        track: "SAAS",
+        year: "2026",
+        status: "beta",
+        texture: "../../assets/texture-violet.jpg",
+        image: "../../assets/card-brooklyn.mp4",
+        summary: {
+          en: [
+            "Podcast booking SaaS built for a **US PR agency**.",
+            "From research to reporting, **fully automated**.",
+          ],
+          fr: [
+            "SaaS de booking podcast construit pour une **agence PR américaine**.",
+            "De la recherche au reporting, **tout automatisé**.",
+          ],
+        },
+        detail: {
+          en: [
+            "Built for **Badassery**, a US-based PR agency specializing in podcast placement.",
+            "The real problem: finding the right podcast for a client takes hours — scattered data, missing contacts, manual tracking.",
+            "The solution: a database of **100K+ shows** enriched across **195 data points**, an AI matching engine, automated outreach pipeline, and a white-label client portal.",
+            "The whole process in one tool. **Live beta** — 3–5 agencies testing.",
+          ],
+          fr: [
+            "Construit pour **Badassery**, agence PR américaine spécialisée en placement podcast.",
+            "Le vrai problème : trouver le bon podcast pour un client prend des heures — données éparpillées, contacts introuvables, suivi manuel.",
+            "La solution : une base de **100K+ émissions** enrichies sur **195 points de données**, un moteur de matching IA, pipeline d'outreach automatique, et un portail client white-label.",
+            "Tout le process en un seul outil. **Beta live** — 3–5 agences en test.",
+          ],
+        },
+        tags: ["React", "Node.js", "Firebase", "Python"],
+        link: "./projects/brooklyn.html",
+      },
+      {
+        id: "francoise-chadelas",
+        name: "FRANÇOISE CHADELAS",
+        hideLabel: true,
+        track: "WEB",
+        year: "2024",
+        status: "shipped",
+        texture: "../../assets/texture-violet.jpg",
+        summary: {
+          en: "Photography portfolio and print shop for a professional photographer. Secure checkout, limited-edition Hahnemühle prints.",
+          fr: "Site vitrine et boutique tirages pour une photographe professionnelle. Paiement sécurisé, tirages Hahnemühle en édition limitée.",
+        },
+        detail: {
+          en: "Showcase site built to order — portfolio organized by thematic series, print shop with secure payment.",
+          fr: "Site vitrine sur-mesure — portfolio organisé par séries thématiques, boutique tirages avec paiement sécurisé.",
+        },
+        tags: ["Next.js", "React", "E-commerce", "Freelance"],
+        iframeSrc: "https://francoise-chadelas-photographe.vercel.app",
+        link: "https://francoise-chadelas-photographe.vercel.app",
+      },
+      {
+        id: "pulsar",
+        name: "PULSAR",
+        hideLabel: true,
+        track: "EMBEDDED",
+        year: "2025",
+        status: "shipped",
+        texture: "../../assets/texture-cyan.jpg",
+        summary: {
+          en: [
+            "Current health monitors are **fragmented** — one device per vital, all clinic-bound.",
+            "PULSAR puts BPM, SpO2, blood pressure and glucose into **one wearable** — ambulatory, real-time.",
+          ],
+          fr: [
+            "Les appareils de mesure actuels sont **fragmentés** — un appareil par constante, tous en clinique.",
+            "PULSAR met BPM, SpO2, pression artérielle et glycémie dans **un seul bracelet** — ambulatoire, temps réel.",
+          ],
+        },
+        detail: {
+          en: [
+            "Developed at **AGORANOV Paris** incubator — hardware, firmware and sensor integration designed end-to-end.",
+            "From PCB schematic to **Zephyr RTOS firmware** on **nRF5340**. Regulatory documentation applied — **IEC 62304 Class B** and **ISO 14971**.",
+          ],
+          fr: [
+            "Développé à l'incubateur **AGORANOV Paris** — hardware, firmware et intégration capteurs conçus de A à Z.",
+            "Du schéma PCB au **firmware Zephyr RTOS** sur **nRF5340**. Documentation réglementaire appliquée — **IEC 62304 Classe B** et **ISO 14971**.",
+          ],
+        },
+        tags: ["nRF5340", "Zephyr RTOS", "Wi-Fi", "IEC 62304"],
+        colorways: [
+          "../../assets/pulsar-nobg_blue.png",
+          "../../assets/pulsar-nobg_purple.png",
+          "../../assets/pulsar-nobg_green.png",
+        ],
+        link: "./projects/pulsar.html",
+      },
+      {
+        id: "physio-viewer",
+        name: "PHYSIO VIEWER",
+        track: "DESKTOP",
+        year: "2025",
+        status: "shipped",
+        texture: "../../assets/texture-teal.jpg",
+        summary: {
+          en: "Qt/QML desktop app and tablet web app for clinical teams. Real-time physiological data from PULSAR — USB extraction and AWS sync.",
+          fr: "Application desktop Qt/QML et web app tablette pour les équipes cliniques. Données physiologiques temps réel depuis PULSAR — extraction USB et synchronisation AWS.",
+        },
+        detail: {
+          en: [
+            "The problem: clinical teams and nurses needed real-time access to PULSAR's data — from workstations and bedside tablets.",
+            "The solution: a Qt/QML desktop app for workstations and a **web app for nurses' tablets**. Direct USB extraction from the device, AWS sync for remote access.",
+          ],
+          fr: [
+            "Le problème : les équipes cliniques et les infirmières avaient besoin d'accéder aux données de PULSAR en temps réel — depuis les postes fixes et les tablettes au chevet.",
+            "La solution : une app desktop Qt/QML pour les postes de travail et une **web app pour les tablettes** des infirmières. Extraction USB directe depuis le device, synchronisation AWS pour l'accès à distance.",
+          ],
+        },
+        tags: ["Qt", "QML", "C++", "WebApp", "AWS", "USB"],
+        image: "../../assets/card-physio.svg",
+        link: "./projects/physio-viewer.html",
+      },
+      {
+        id: "babycam",
+        name: "BABYCAM",
+        track: "EMBEDDED",
+        year: "2025",
+        status: "shipped",
+        texture: "../../assets/texture-amber.jpg",
+        summary: {
+          en: "Intelligent baby monitor built from scratch. **FullHD** H.264 hardware compression, on-chip AI cry detection, four environmental sensors.",
+          fr: "Babyphone intelligent conçu de zéro. **FullHD** compression H.264 matérielle, détection de pleurs IA on-chip, quatre capteurs environnementaux.",
+        },
+        detail: {
+          en: [
+            "The problem: consumer baby monitors are dumb cameras — no cry detection, no environmental awareness, no real intelligence.",
+            "The solution: an ESP32-P4 embedded system with **1080p@30FPS**, hardware H.264 compression, on-chip AI classifying cry, movement and silence, and four environmental sensors. Prototype validated — industrializable architecture.",
+          ],
+          fr: [
+            "Le problème : les babyphones du commerce sont des caméras sans intelligence — pas de détection de pleurs, pas de surveillance environnementale.",
+            "La solution : un système embarqué ESP32-P4 avec **1080p@30FPS**, compression H.264 matérielle, IA on-chip classifiant pleurs, mouvement et silence, et quatre capteurs environnementaux. Prototype validé — architecture industrialisable.",
+          ],
+        },
+        tags: ["ESP32-P4", "H.264", "WiFi 6", "ESP-IDF", "C"],
+        image: "../../assets/card-babycam.png",
+        darkBg: true,
+        link: "./projects/babycam.html",
+      },
+      {
+        id: "babycam-app",
+        name: "BABYCAM APP",
+        track: "MOBILE",
+        year: "2025",
+        status: "shipped",
+        texture: "../../assets/texture-violet.jpg",
+        summary: {
+          en: "Flutter companion app for BABYCAM. Real-time **H.264** video streaming, AI alerts, environmental monitoring — iOS and Android from a single codebase.",
+          fr: "App Flutter compagnon de BABYCAM. Streaming vidéo **H.264** temps réel, alertes IA, données environnementales — iOS et Android depuis un seul codebase.",
+        },
+        detail: {
+          en: [
+            "The problem: a smart monitor is useless without a smart app — parents need real-time alerts, not just a video feed.",
+            "The solution: a single Flutter codebase for iOS and Android. H.264 stream decoded in **<200ms**, push notifications for AI events, AWS backend for storage and history. Remote nightlight and lullaby control.",
+          ],
+          fr: [
+            "Le problème : un babyphone intelligent est inutile sans une app intelligente — les parents ont besoin d'alertes temps réel, pas juste d'un flux vidéo.",
+            "La solution : un seul codebase Flutter pour iOS et Android. Flux H.264 décodé en **moins de 200 ms**, notifications push pour les événements IA, backend AWS pour le stockage et l'historique. Contrôle veilleuse et berceuse à distance.",
+          ],
+        },
+        tags: ["Flutter", "Dart", "AWS", "H.264", "iOS", "Android"],
+        image: "../../assets/card-babycam-app.png",
+        darkBg: true,
+        link: "./projects/babycam-app.html",
+      },
+      {
+        id: "medivietech",
+        name: "MEDIVIETECH",
+        hideLabel: true,
+        track: "WEB",
+        year: "2024",
+        status: "shipped",
+        texture: "../../assets/texture-teal.jpg",
+        summary: {
+          en: "Showcase site for Medivietech, a healthtech startup building connected medical devices.",
+          fr: "Site vitrine de Medivietech, startup healthtech qui conçoit des dispositifs médicaux connectés.",
+        },
+        detail: {
+          en: "Presents the company, its products and vision. Next.js frontend. Live in production.",
+          fr: "Présente l'entreprise, ses produits et sa vision. Frontend Next.js. En production.",
+        },
+        tags: ["Next.js", "React", "Healthtech"],
+        iframeSrc: "https://www.medivietech.com",
+        link: "https://www.medivietech.com",
+      },
+      {
+        id: "sleepguard",
+        name: "TheSleepGuard",
+        track: "EMBEDDED",
+        year: "2023",
+        status: "research",
+        texture: "../../assets/texture-teal.jpg",
+        summary: {
+          en: "Sleep quality monitoring by HRV. Research collaboration with **UDESC Brazil** — STM32 firmware and complete DSP pipeline in C++.",
+          fr: "Monitoring de la qualité du sommeil par HRV. Collaboration de recherche avec **l'UDESC Brésil** — firmware STM32 et pipeline DSP complet en C++.",
+        },
+        detail: {
+          en: [
+            "The problem: measuring sleep quality outside a lab requires clinical-grade HRV extraction — no consumer device goes that far.",
+            "The solution: a custom acquisition board, STM32 firmware, and a full **C++ DSP pipeline** for HRV feature extraction. Academic collaboration with Universidade do Estado de Santa Catarina (UDESC), Brazil.",
+          ],
+          fr: [
+            "Le problème : mesurer la qualité du sommeil en dehors d'un labo nécessite une extraction HRV de niveau clinique — aucun dispositif grand public ne va aussi loin.",
+            "La solution : une carte d'acquisition custom, firmware STM32, et un pipeline **DSP C++ complet** pour l'extraction de features HRV. Collaboration académique avec l'Universidade do Estado de Santa Catarina (UDESC), Brésil.",
+          ],
+        },
+        tags: ["STM32", "C++", "DSP", "HRV", "Research"],
+        image: "../../assets/card-sleepguard.svg",
+        link: "./projects/sleepguard.html",
+      },
+    ];
+
+    /* ───────────────────────────────────────────
+       HERO WAVE
+    ─────────────────────────────────────────── */
+    function HeroWave() {
+      const canvasRef = useRef(null);
+
+      useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+
+        let width, height, imageData, data;
+        const SCALE = 4; // lower = sharper but heavier
+
+        const resize = () => {
+          canvas.width  = window.innerWidth;
+          canvas.height = window.innerHeight;
+          width  = Math.floor(canvas.width  / SCALE);
+          height = Math.floor(canvas.height / SCALE);
+          imageData = ctx.createImageData(width, height);
+          data = imageData.data;
+        };
+
+        const ro = new ResizeObserver(resize);
+        ro.observe(document.body);
+        resize();
+
+        const startTime = Date.now();
+
+        const SIN = new Float32Array(1024);
+        const COS = new Float32Array(1024);
+        for (let i = 0; i < 1024; i++) {
+          const a = (i / 1024) * Math.PI * 2;
+          SIN[i] = Math.sin(a);
+          COS[i] = Math.cos(a);
+        }
+        const fsin = x => SIN[Math.floor(((x % (Math.PI*2)) / (Math.PI*2)) * 1024) & 1023];
+        const fcos = x => COS[Math.floor(((x % (Math.PI*2)) / (Math.PI*2)) * 1024) & 1023];
+
+        let raf;
+        const render = () => {
+          const time = (Date.now() - startTime) * 0.001;
+          for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+              const ux = (2 * x - width)  / height;
+              const uy = (2 * y - height) / height;
+              let a = 0, d = 0;
+              for (let i = 0; i < 4; i++) {
+                a += fcos(i - d + time * 0.4 - a * ux);
+                d += fsin(i * uy + a);
+              }
+              const wave = (fsin(a) + fcos(d)) * 0.5;
+              const intensity = 0.25 + 0.35 * wave;
+              const base = 0.05 + 0.08 * fcos(ux + uy + time * 0.25);
+              const purple = 0.18 * fsin(a * 1.4 + time * 0.15);
+              const blue   = 0.10 * fcos(d * 2   + time * 0.10);
+
+              // violet palette: R=0.49 G=0.36 B=1.0 → #7C5CFF
+              const r = Math.max(0, Math.min(1, base + purple * 1.2 + blue * 0.3)) * intensity;
+              const g = Math.max(0, Math.min(1, base + purple * 0.6 + blue * 0.5)) * intensity;
+              const b = Math.max(0, Math.min(1, base + blue   * 1.5 + purple * 0.8)) * intensity;
+
+              const idx = (y * width + x) * 4;
+              data[idx]   = r * 255;
+              data[idx+1] = g * 255;
+              data[idx+2] = b * 255;
+              data[idx+3] = 255;
+            }
+          }
+          ctx.putImageData(imageData, 0, 0);
+          ctx.imageSmoothingEnabled = true;
+          ctx.drawImage(canvas, 0, 0, width, height, 0, 0, canvas.width, canvas.height);
+          raf = requestAnimationFrame(render);
+        };
+
+        render();
+        return () => { cancelAnimationFrame(raf); ro.disconnect(); };
+      }, []);
+
+      return (
+        <canvas
+          ref={canvasRef}
+          style={{
+            position: "fixed",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            mixBlendMode: "screen",
+            opacity: 0.75,
+            pointerEvents: "none",
+            zIndex: 0,
+          }}
+        />
+      );
+    }
+
+    /* ───────────────────────────────────────────
+       MOUSE GLOW — DOM direct, zero re-renders
+    ─────────────────────────────────────────── */
+    function MouseGlow() {
+      useEffect(() => {
+        const el = document.getElementById("th-mouse-glow");
+        if (!el) return;
+
+        let raf = null;
+        let tx = -350, ty = -350;
+
+        const onMove = (e) => {
+          tx = e.clientX - 350;
+          ty = e.clientY - 350;
+          if (!raf) {
+            raf = requestAnimationFrame(() => {
+              el.style.transform = `translate(${tx}px, ${ty}px)`;
+              el.style.opacity = "1";
+              raf = null;
+            });
+          }
+        };
+        const onLeave = () => { el.style.opacity = "0"; };
+
+        window.addEventListener("mousemove", onMove, { passive: true });
+        document.documentElement.addEventListener("mouseleave", onLeave);
+        return () => {
+          window.removeEventListener("mousemove", onMove);
+          document.documentElement.removeEventListener("mouseleave", onLeave);
+          if (raf) cancelAnimationFrame(raf);
+        };
+      }, []);
+
+      return null;
+    }
+
+    /* ───────────────────────────────────────────
+       Hook: entrance observer
+    ─────────────────────────────────────────── */
+    function useEnter(stagger = 0) {
+      const ref = useRef(null);
+      useEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+        const observer = new IntersectionObserver(
+          ([entry]) => {
+            if (entry.isIntersecting) {
+              setTimeout(() => el.classList.add("is-visible"), stagger);
+              observer.disconnect();
+            }
+          },
+          { threshold: 0.1 }
+        );
+        observer.observe(el);
+        return () => observer.disconnect();
+      }, [stagger]);
+      return ref;
+    }
+
+    /* ───────────────────────────────────────────
+       NAV
+    ─────────────────────────────────────────── */
+    function Nav({ lang, setLang, t }) {
+      const [scrolled,  setScrolled]  = useState(false);
+      const [menuOpen,  setMenuOpen]  = useState(false);
+      const [activeId,  setActiveId]  = useState("");
+
+      useEffect(() => {
+        const onScroll = () => setScrolled(window.scrollY > 24);
+        window.addEventListener("scroll", onScroll, { passive: true });
+        return () => window.removeEventListener("scroll", onScroll);
+      }, []);
+
+      useEffect(() => {
+        const ids = ["work", "skills", "about", "contact"];
+        const observers = ids.map(id => {
+          const el = document.getElementById(id);
+          if (!el) return null;
+          const obs = new IntersectionObserver(([e]) => {
+            if (e.isIntersecting) setActiveId(id);
+          }, { rootMargin: "-40% 0px -55% 0px", threshold: 0 });
+          obs.observe(el);
+          return obs;
+        });
+        return () => observers.forEach(o => o && o.disconnect());
+      }, []);
+
+      const closeMenu = () => setMenuOpen(false);
+
+      return (
+        <>
+          <header className={"thNav" + (scrolled ? " is-scrolled" : "")}>
+            <div className="thNav-inner">
+              <a href="#top" className="thBrand" onClick={closeMenu}>
+                <img src="../../assets/logo.png" alt="" className="thBrand-logo" />
+                Tom Huyghe
+              </a>
+              <nav className="thNav-links">
+                <a href="#work"    className={activeId === "work"    ? "is-active" : ""}>{t.nav.work}</a>
+                <a href="#skills"  className={activeId === "skills"  ? "is-active" : ""}>{t.nav.skills}</a>
+                <a href="#about"   className={activeId === "about"   ? "is-active" : ""}>{t.nav.about}</a>
+                <a href="#contact" className={activeId === "contact" ? "is-active" : ""}>{t.nav.contact}</a>
+              </nav>
+              <div className="thLang">
+                <button className={lang === "en" ? "is-active" : ""} onClick={() => setLang("en")} aria-label="English">EN</button>
+                <button className={lang === "fr" ? "is-active" : ""} onClick={() => setLang("fr")} aria-label="Français">FR</button>
+              </div>
+              <button
+                className={"thBurger" + (menuOpen ? " is-open" : "")}
+                aria-label="Menu"
+                onClick={() => setMenuOpen(o => !o)}
+              >
+                <span /><span /><span />
+              </button>
+            </div>
+          </header>
+          <div className={"thMobileMenu" + (menuOpen ? " is-open" : "")}>
+            <a href="#work"    className={activeId === "work"    ? "is-active" : ""} onClick={closeMenu}>{t.nav.work}</a>
+            <a href="#skills"  className={activeId === "skills"  ? "is-active" : ""} onClick={closeMenu}>{t.nav.skills}</a>
+            <a href="#about"   className={activeId === "about"   ? "is-active" : ""} onClick={closeMenu}>{t.nav.about}</a>
+            <a href="#contact" className={activeId === "contact" ? "is-active" : ""} onClick={closeMenu}>{t.nav.contact}</a>
+            <div className="thLang" style={{ marginTop: "var(--s-4)" }}>
+              <button className={lang === "en" ? "is-active" : ""} onClick={() => { setLang("en"); closeMenu(); }}>EN</button>
+              <button className={lang === "fr" ? "is-active" : ""} onClick={() => { setLang("fr"); closeMenu(); }}>FR</button>
+            </div>
+          </div>
+        </>
+      );
+    }
+
+    /* ───────────────────────────────────────────
+       HERO
+    ─────────────────────────────────────────── */
+    function accentHeadline(text, lang) {
+      const words = lang === "fr"
+        ? ["conçois", "écris", "livre"]
+        : ["design", "write", "ship"];
+      const pattern = new RegExp(`(${words.join("|")})`, "g");
+      const parts = text.split(pattern);
+      return (
+        <>
+          {parts.map((part, i) =>
+            words.includes(part)
+              ? <span key={i} style={{ color: "var(--accent)" }}>{part}</span>
+              : part
+          )}
+        </>
+      );
+    }
+
+    function Hero({ t, lang }) {
+      const kickerRef  = useRef(null);
+      const headRef    = useRef(null);
+      const subRef     = useRef(null);
+      const ctaRef     = useRef(null);
+      const portraitRef = useRef(null);
+
+      useEffect(() => {
+        const seq = [
+          [kickerRef.current,   150],
+          [portraitRef.current, 250],
+          [headRef.current,     380],
+          [subRef.current,      540],
+          [ctaRef.current,      680],
+        ];
+        seq.forEach(([el, delay]) => {
+          if (!el) return;
+          setTimeout(() => el.classList.add("is-visible"), delay);
+        });
+      }, []);
+
+      return (
+        <section className="thHero" id="top">
+          <div className="thHero-grid">
+            <div className="thHero-text">
+              <div className="thEyebrow th-reveal" ref={kickerRef}>{t.hero.kicker}</div>
+              <h1 className="thHero-headline th-reveal" ref={headRef}>
+                {accentHeadline(t.hero.headline, lang)}
+              </h1>
+              <p className="thHero-sub th-reveal" ref={subRef}>{t.hero.sub}</p>
+              <div className="thHero-ctas th-reveal" ref={ctaRef}>
+                <a className="thBtn thBtn-primary" href="#contact">
+                  {t.hero.cta1}
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M5 12h14M13 5l7 7-7 7"/>
+                  </svg>
+                </a>
+              </div>
+            </div>
+            <div className="thHero-portrait th-reveal th-reveal-portrait" ref={portraitRef}>
+              <img src="../../assets/portrait.png" alt="Tom Huyghe" />
+              <div className="thHero-portrait-tag">
+                <span className="thDot thDot-success" />
+                {t.about.location}
+              </div>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    /* ───────────────────────────────────────────
+       STATS
+    ─────────────────────────────────────────── */
+    function StatsRow({ t }) {
+      const wrapRef = useRef(null);
+
+      useEffect(() => {
+        const wrap = wrapRef.current;
+        if (!wrap) return;
+        const obs = new IntersectionObserver(([e]) => {
+          if (!e.isIntersecting) return;
+          wrap.querySelectorAll(".thStat").forEach((el, i) => {
+            setTimeout(() => el.classList.add("is-visible"), i * 90);
+          });
+          obs.disconnect();
+        }, { threshold: 0.3 });
+        obs.observe(wrap);
+        return () => obs.disconnect();
+      }, []);
+
+      return (
+        <div className="thStats">
+          <div className="thStats-inner" ref={wrapRef}>
+            {t.stats.map((s, i) => (
+              <div key={i} className="thStat th-stat">
+                <span className="thStat-value">{s.value}</span>
+                <span className="thStat-label">{s.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    /* ───────────────────────────────────────────
+       TEXT RENDER HELPERS
+    ─────────────────────────────────────────── */
+    function renderLine(text) {
+      const parts = text.split(/\*\*(.+?)\*\*/g);
+      return parts.map((p, i) =>
+        i % 2 === 1
+          ? <strong key={i} style={{ color: "var(--accent)", fontWeight: 600 }}>{p}</strong>
+          : p
+      );
+    }
+    function renderText(text) {
+      if (Array.isArray(text)) {
+        return text.map((line, i) => (
+          <span key={i} style={{ display: "block", marginBottom: i < text.length - 1 ? 4 : 0 }}>
+            {renderLine(line)}
+          </span>
+        ));
+      }
+      return renderLine(text);
+    }
+
+    /* ───────────────────────────────────────────
+       TIMELINE
+    ─────────────────────────────────────────── */
+    const STATUS_LABEL = {
+      shipped:    { en: "SHIPPED",     fr: "LIVRÉ" },
+      beta:       { en: "BETA",        fr: "BETA" },
+      research:   { en: "RESEARCH",    fr: "RECHERCHE" },
+      inprogress: { en: "IN PROGRESS", fr: "EN COURS" },
+    };
+
+    function IframePreview({ src, name }) {
+      const wrapRef = useRef(null);
+      const [scale, setScale] = React.useState(0.3);
+      const IFRAME_W = 1440;
+
+      useEffect(() => {
+        const el = wrapRef.current;
+        if (!el) return;
+        const update = () => {
+          const w = el.offsetWidth;
+          if (w > 0) setScale(w / IFRAME_W);
+        };
+        update();
+        const ro = new ResizeObserver(update);
+        ro.observe(el);
+        return () => ro.disconnect();
+      }, []);
+
+      const iframeH = Math.ceil(150 / scale);
+
+      return (
+        <div className="thTL-iframe-wrap" ref={wrapRef}>
+          <iframe
+            src={src}
+            title={name}
+            loading="lazy"
+            sandbox="allow-scripts allow-same-origin"
+            className="thTL-iframe-el"
+            style={{ width: IFRAME_W + 'px', height: iframeH + 'px', transform: `scale(${scale})`, transformOrigin: 'top left', border: 'none', display: 'block' }}
+          />
+        </div>
+      );
+    }
+
+    function TimelineItem({ p, lang, index }) {
+      const side = index % 2 === 0 ? "left" : "right";
+      const cardRef = useRef(null);
+      const nodeRef = useRef(null);
+      const statusLabel = STATUS_LABEL[p.status];
+
+      useEffect(() => {
+        const card = cardRef.current;
+        const node = nodeRef.current;
+        if (!card || !node) return;
+        const obs = new IntersectionObserver(([e]) => {
+          if (e.isIntersecting) {
+            setTimeout(() => {
+              card.classList.add("is-visible");
+              node.classList.add("is-active");
+            }, index * 80);
+            obs.disconnect();
+          }
+        }, { threshold: 0.25 });
+        obs.observe(card);
+        return () => obs.disconnect();
+      }, []);
+
+      const cardEl = (
+        <div className="thTL-card" ref={cardRef}>
+          <div className={`thTL-img${p.image ? " thTL-img--has-screen" : ""}${p.colorways ? " thTL-img--has-colorways" : ""}${p.darkBg ? " thTL-img--dark-bg" : ""}${p.containImg ? " thTL-img--contain" : ""}${p.iframeSrc ? " thTL-img--has-iframe" : ""}`}>
+            <div className="thTL-img-texture" style={{ backgroundImage: `url(${p.texture})` }} />
+            {p.iframeSrc && <IframePreview src={p.iframeSrc} name={p.name} />}
+            {p.colorways && (
+              <div className="thTL-img-colorways">
+                {p.colorways.map((src, i) => <img key={i} src={src} alt="" />)}
+              </div>
+            )}
+            {p.image && (
+              p.image.endsWith('.mp4') || p.image.endsWith('.webm')
+                ? <video className="thTL-img-screen thTL-img-screen--video" src={p.image} autoPlay loop muted playsInline />
+                : p.image.endsWith('.svg')
+                  ? <img className="thTL-img-screen thTL-img-screen--svg" src={p.image} alt="" />
+                  : <div className="thTL-img-screen" style={{ backgroundImage: `url(${p.image})` }} />
+            )}
+            <div className="thTL-img-veil" />
+            {!p.hideLabel && <span className="thTL-img-label">{p.name}</span>}
+            {p.iframeSrc && (
+              <>
+                <span className="thTL-live-badge">
+                  <span className="thTL-live-badge-dot" />
+                </span>
+                <span className="thTL-live-hint">Scroll to explore</span>
+              </>
+            )}
+          </div>
+          <div className="thTL-body">
+            <div className="thTL-meta">
+              <span style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                {Array.isArray(p.track)
+                  ? p.track.map((tr, i) => <span key={i} className="thTL-track-tag">{tr}</span>)
+                  : <span className="thTL-track-tag">{p.track}</span>}
+              </span>
+              <span className={"thTL-status thTL-status-" + p.status}>● {statusLabel[lang]}</span>
+            </div>
+            <h3 className="thTL-title">{p.name}</h3>
+            <p className="thTL-summary">{renderText(p.summary[lang])}</p>
+            <p className="thTL-detail">{renderText(p.detail[lang])}</p>
+            <div className="thTL-tags">
+              {p.tags.map(tag => <span key={tag} className="thChip">{tag}</span>)}
+            </div>
+            <div className="thTL-footer">
+              <a className="thTL-cta" href={p.link} target="_blank" rel="noopener noreferrer">
+                {lang === "fr" ? "Voir le projet" : "View project"}
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/>
+                </svg>
+              </a>
+            </div>
+          </div>
+        </div>
+      );
+
+      return (
+        <div className={`thTL-item thTL-item-${side}`}>
+          {side === "left"  && cardEl}
+          <div className="thTL-node" ref={nodeRef}>
+            <div className="thTL-dot" />
+            <span className="thTL-year">{p.year}</span>
+          </div>
+          {side === "right" && cardEl}
+          <div className="thTL-spacer" />
+        </div>
+      );
+    }
+
+    function ProjectTimeline({ t, lang }) {
+      const wrapRef  = useRef(null);
+      const lineRef  = useRef(null);
+      const titleRef = useEnter(0);
+      const [query, setQuery] = React.useState("");
+
+      useEffect(() => {
+        const wrap = wrapRef.current;
+        const line = lineRef.current;
+        if (!wrap || !line) return;
+
+        const onScroll = () => {
+          const rect = wrap.getBoundingClientRect();
+          const total = wrap.offsetHeight;
+          const scrolled = Math.max(0, -rect.top + window.innerHeight * 0.5);
+          const pct = Math.min(100, (scrolled / total) * 100);
+          line.style.height = pct + "%";
+        };
+
+        window.addEventListener("scroll", onScroll, { passive: true });
+        onScroll();
+        return () => window.removeEventListener("scroll", onScroll);
+      }, []);
+
+      const q = query.trim().toLowerCase();
+      const filtered = q
+        ? PROJECTS.filter(p =>
+            p.name.toLowerCase().includes(q) ||
+            (Array.isArray(p.track) ? p.track.some(tr => tr.toLowerCase().includes(q)) : p.track.toLowerCase().includes(q)) ||
+            p.tags.some(tag => tag.toLowerCase().includes(q)) ||
+            p.summary[lang].toLowerCase().includes(q) ||
+            p.detail[lang].toLowerCase().includes(q)
+          )
+        : PROJECTS;
+
+      return (
+        <section className="thSection" id="work">
+          <div className="thSection-inner">
+            <div className="thEyebrow th-enter is-visible">{t.work.eyebrow}</div>
+            <h2 className="thSection-title th-enter" ref={titleRef}>{t.work.title}</h2>
+            <div className="thTL-search-wrap">
+              <svg className="thTL-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+              </svg>
+              <input
+                className="thTL-search"
+                type="text"
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                placeholder={lang === "fr" ? "Rechercher — ESP32, Flutter, React, BLE…" : "Search — ESP32, Flutter, React, BLE…"}
+                spellCheck="false"
+                autoComplete="off"
+              />
+              {query && (
+                <button className="thTL-search-clear" onClick={() => setQuery("")} aria-label="Clear">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                  </svg>
+                </button>
+              )}
+              {q && (
+                <span className="thTL-search-count">
+                  {filtered.length} {lang === "fr" ? "résultat" : "result"}{filtered.length !== 1 ? "s" : ""}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="thTimeline-wrap" ref={wrapRef}>
+            <div className="thTL-progress" ref={lineRef} />
+            {filtered.length > 0
+              ? filtered.map((p, i) => <TimelineItem key={p.id} p={p} lang={lang} index={i} />)
+              : <div className="thTL-empty">{lang === "fr" ? "Aucun projet pour cette recherche." : "No projects match this search."}</div>
+            }
+          </div>
+        </section>
+      );
+    }
+
+    /* ───────────────────────────────────────────
+       PULSAR DETAIL
+    ─────────────────────────────────────────── */
+    const PULSAR_CHAPTERS = {
+      en: [
+        {
+          eyebrow: "CONTEXT",
+          title: "Cardiac events happen outside the hospital.",
+          body: "80% of arrhythmias occur in daily life, not in a clinic. Standard Holter monitors restrict movement and deliver data days later. We needed a wearable that captures, processes, and transmits in real time.",
+        },
+        {
+          eyebrow: "HARDWARE",
+          title: "10ms control loop. Always on.",
+          body: "ESP32-S3 running FreeRTOS. ECG + SpO2 acquisition at 200Hz. BLE for short-range sync, AWS IoT Greengrass for cloud pipeline. Battery-optimised firmware with deep-sleep between bursts.",
+          specs: [
+            { k: "MCU",         v: "ESP32-S3 (dual-core, 240MHz)" },
+            { k: "Sensors",     v: "ECG single-lead, SpO2, accelerometer" },
+            { k: "Connectivity",v: "BLE 5.0 + Wi-Fi → AWS IoT (MQTT)" },
+            { k: "RTOS",        v: "FreeRTOS, 10ms hard real-time loop" },
+            { k: "Battery",     v: "72h autonomy at full acquisition rate" },
+          ],
+        },
+        {
+          eyebrow: "PROCESS",
+          title: "IEC 62304 Class B from day one.",
+          body: "Full software lifecycle documented to IEC 62304 Class B. Risk management under ISO 14971. Design history file maintained throughout. Every firmware build is traceable to a requirement.",
+          specs: [
+            { k: "Standard",  v: "IEC 62304 Class B" },
+            { k: "Risk",      v: "ISO 14971 risk file" },
+            { k: "Traceability", v: "Requirement → test → build" },
+            { k: "Validation", v: "V&V protocol, bench + clinical" },
+          ],
+        },
+        {
+          eyebrow: "RESULTS",
+          title: "50+ patients. Validated in-vivo.",
+          body: "Clinical trial conducted with a cardiology team. 50+ patients enrolled across two sites. Zero firmware failures during the trial. Data pipeline delivered cardiologist-readable reports within minutes of acquisition.",
+          specs: [
+            { k: "Patients",   v: "50+ enrolled, 2 sites" },
+            { k: "Uptime",     v: "100% — zero firmware failures in trial" },
+            { k: "Latency",    v: "< 3min acquisition → cloud report" },
+            { k: "Status",     v: "Shipped · 2024" },
+          ],
+        },
+      ],
+      fr: [
+        {
+          eyebrow: "CONTEXTE",
+          title: "Les événements cardiaques arrivent hors hôpital.",
+          body: "80% des arythmies surviennent au quotidien, pas en clinique. Les Holters classiques limitent la mobilité et livrent les données des jours plus tard. Il fallait un wearable qui capte, traite et transmet en temps réel.",
+        },
+        {
+          eyebrow: "MATÉRIEL",
+          title: "Boucle de contrôle à 10 ms. Toujours actif.",
+          body: "ESP32-S3 sous FreeRTOS. Acquisition ECG + SpO2 à 200 Hz. BLE pour la sync locale, AWS IoT Greengrass pour le pipeline cloud. Firmware optimisé batterie avec deep-sleep entre les bursts.",
+          specs: [
+            { k: "MCU",           v: "ESP32-S3 (dual-core, 240 MHz)" },
+            { k: "Capteurs",      v: "ECG monodérivation, SpO2, accéléromètre" },
+            { k: "Connectivité",  v: "BLE 5.0 + Wi-Fi → AWS IoT (MQTT)" },
+            { k: "RTOS",          v: "FreeRTOS, boucle temps-réel 10 ms" },
+            { k: "Batterie",      v: "72 h d'autonomie en acquisition complète" },
+          ],
+        },
+        {
+          eyebrow: "PROCESSUS",
+          title: "IEC 62304 Classe B dès le premier jour.",
+          body: "Cycle de vie logiciel documenté selon IEC 62304 Classe B. Gestion des risques sous ISO 14971. Dossier de conception maintenu tout au long. Chaque build firmware est traçable jusqu'à une exigence.",
+          specs: [
+            { k: "Norme",        v: "IEC 62304 Classe B" },
+            { k: "Risques",      v: "Dossier ISO 14971" },
+            { k: "Traçabilité",  v: "Exigence → test → build" },
+            { k: "Validation",   v: "Protocole V&V, banc + clinique" },
+          ],
+        },
+        {
+          eyebrow: "RÉSULTATS",
+          title: "50+ patients. Validé in-vivo.",
+          body: "Essai clinique mené avec une équipe de cardiologie. 50+ patients inclus sur deux sites. Zéro défaillance firmware pendant l'essai. Le pipeline de données livrait des rapports lisibles par le cardiologue en quelques minutes.",
+          specs: [
+            { k: "Patients",    v: "50+ inclus, 2 sites" },
+            { k: "Disponibilité", v: "100% — zéro panne firmware en essai" },
+            { k: "Latence",     v: "< 3 min acquisition → rapport cloud" },
+            { k: "Statut",      v: "Livré · 2024" },
+          ],
+        },
+      ],
+    };
+
+    function PulsarDetail({ lang }) {
+      const visualRef   = useRef(null);
+      const sectionRef  = useRef(null);
+      const chapters    = PULSAR_CHAPTERS[lang];
+
+      useEffect(() => {
+        const visual = visualRef.current;
+        const section = sectionRef.current;
+        if (!visual || !section) return;
+
+        const chapterEls = section.querySelectorAll(".thProjChapter");
+        const observers = Array.from(chapterEls).map((el, i) => {
+          const obs = new IntersectionObserver(([e]) => {
+            if (e.isIntersecting) {
+              visual.setAttribute("data-active", String(i));
+              el.classList.add("is-visible");
+            }
+          }, { rootMargin: "-30% 0px -50% 0px", threshold: 0 });
+          obs.observe(el);
+          return obs;
+        });
+        return () => observers.forEach(o => o.disconnect());
+      }, [lang]);
+
+      return (
+        <section className="thProjDetail" id="pulsar" ref={sectionRef}>
+          <div className="thProjDetail-header">
+            <div className="thEyebrow th-enter is-visible">PULSAR · CASE STUDY</div>
+            <h2 className="thSection-title th-enter is-visible" style={{ maxWidth: 640 }}>
+              {lang === "fr"
+                ? "Un wearable cardiaque, du firmware au rapport clinique."
+                : "A cardiac wearable, from firmware to clinical report."}
+            </h2>
+          </div>
+
+          <div className="thProjDetail-inner">
+            {/* ── Sticky visual ── */}
+            <div className="thProjVisual" ref={visualRef} data-active="0">
+              <div className="thProjImg-wrap">
+                <img
+                  src="../../assets/pulsar-render.png"
+                  alt="PULSAR wearable"
+                  className="thProjImg"
+                />
+              </div>
+
+              {/* Heartbeat line */}
+              <svg className="thHeartbeat" viewBox="0 0 300 40" fill="none">
+                <polyline
+                  className="thHeartbeat-line"
+                  points="0,20 60,20 75,20 80,5 85,35 90,20 105,20 120,20 125,8 130,32 135,20 150,20 210,20 215,5 220,35 225,20 240,20 300,20"
+                  stroke="var(--success)"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                />
+              </svg>
+
+              {/* Live badge */}
+              <div className="thProjBadge">
+                <span className="thDot thDot-success" />
+                <span style={{ color: "var(--fg-3)" }}>PATIENTS VALIDATED</span>
+                <span className="thProjBadge-val">50+</span>
+              </div>
+            </div>
+
+            {/* ── Chapters ── */}
+            <div className="thProjChapters">
+              {chapters.map((c, i) => (
+                <div key={i} className="thProjChapter">
+                  <div className="thEyebrow">{c.eyebrow}</div>
+                  <h3 className="thProjChapter-title">{c.title}</h3>
+                  <p className="thProjChapter-body">{c.body}</p>
+                  {c.specs && (
+                    <dl className="thProjChapter-specs">
+                      {c.specs.map((s, j) => (
+                        <div key={j} className="thProjChapter-spec">
+                          <dt>{s.k}</dt>
+                          <dd>{s.v}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    /* ───────────────────────────────────────────
+       SKILLS
+    ─────────────────────────────────────────── */
+    const CHIP_MAX = 5;
+    function SkillRow({ row }) {
+      const [expanded, setExpanded] = React.useState(false);
+      const hidden = row.chips.length - CHIP_MAX;
+      const visible = expanded ? row.chips : row.chips.slice(0, CHIP_MAX);
+      return (
+        <div className="thSkillRow">
+          <dt>{row.k}</dt>
+          <dd>
+            <div className="thSkillChips">
+              {visible.map((chip, j) => (
+                <span key={j} className="thSkillChip">
+                  {chip.icon && <i className={chip.icon} />}
+                  {chip.name}
+                  {chip.note && <span className="thSkillChip-note">{chip.note}</span>}
+                </span>
+              ))}
+              {!expanded && hidden > 0 && (
+                <button className="thSkillMore" onClick={() => setExpanded(true)}>+{hidden}</button>
+              )}
+              {expanded && hidden > 0 && (
+                <button className="thSkillMore" onClick={() => setExpanded(false)}>−</button>
+              )}
+            </div>
+          </dd>
+        </div>
+      );
+    }
+
+    function SkillsSplit({ t }) {
+      const titleRef = useEnter(0);
+      const leftRef  = useRef(null);
+      const rightRef = useRef(null);
+
+      useEffect(() => {
+        [[leftRef.current, 0], [rightRef.current, 100]].forEach(([col, delay]) => {
+          if (!col) return;
+          const obs = new IntersectionObserver(([e]) => {
+            if (!e.isIntersecting) return;
+            setTimeout(() => {
+              col.classList.add("is-visible");
+              col.querySelectorAll(".thSkillRow").forEach((row, i) => {
+                setTimeout(() => row.classList.add("is-visible"), i * 60);
+              });
+            }, delay);
+            obs.disconnect();
+          }, { threshold: 0.15 });
+          obs.observe(col);
+        });
+      }, []);
+
+      return (
+        <section className="thSection" id="skills">
+          <div className="thSection-inner">
+            <div className="thEyebrow th-enter is-visible">{t.skills.eyebrow}</div>
+            <h2 className="thSection-title th-enter" ref={titleRef}>{t.skills.title}</h2>
+            <div className="thSkillsSplit">
+              <div className="thSkillCol thSkillCol-left" ref={leftRef}>
+                <span className="thSkillCol-idx" aria-hidden="true">01</span>
+                <div className="thSkillCol-header">
+                  <h3 className="thSkillCol-title">{t.skills.embedded.title}</h3>
+                </div>
+                <dl className="thSkillList">
+                  {t.skills.embedded.items.map((row, i) => (
+                    <SkillRow key={i} row={row} />
+                  ))}
+                </dl>
+              </div>
+              <div className="thSkillCol thSkillCol-right" ref={rightRef}>
+                <span className="thSkillCol-idx" aria-hidden="true">02</span>
+                <div className="thSkillCol-header">
+                  <h3 className="thSkillCol-title">{t.skills.web.title}</h3>
+                </div>
+                <dl className="thSkillList">
+                  {t.skills.web.items.map((row, i) => (
+                    <SkillRow key={i} row={row} />
+                  ))}
+                </dl>
+              </div>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    /* ───────────────────────────────────────────
+       ABOUT
+    ─────────────────────────────────────────── */
+    function About({ t }) {
+      const sectionRef = useRef(null);
+
+      useEffect(() => {
+        const section = sectionRef.current;
+        if (!section) return;
+        const obs = new IntersectionObserver(([e]) => {
+          if (!e.isIntersecting) return;
+          const els = section.querySelectorAll("[data-reveal]");
+          els.forEach((el, i) => {
+            setTimeout(() => el.classList.add("is-visible"), i * 90);
+          });
+          obs.disconnect();
+        }, { threshold: 0.15 });
+        obs.observe(section);
+        return () => obs.disconnect();
+      }, []);
+
+      const FACT_ICONS = [
+        /* MapPin */
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>,
+        /* Wifi */
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="currentColor"/></svg>,
+        /* Globe */
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>,
+      ];
+
+      return (
+        <section className="thSection" id="about" ref={sectionRef}>
+          <div className="thSection-inner">
+            <div className="thEyebrow th-reveal" data-reveal>{t.about.eyebrow}</div>
+            <h2 className="thSection-title th-reveal" data-reveal>{t.about.title}</h2>
+            <p className="thAbout-body th-reveal" data-reveal>
+              {t.about.body}
+            </p>
+            <div className="thAbout-facts th-reveal" data-reveal>
+              {t.about.facts.map((f, i) => (
+                <span key={i} className="thAbout-fact">
+                  {FACT_ICONS[i]}
+                  {f.label}
+                </span>
+              ))}
+            </div>
+            <div className="thPill th-reveal th-reveal-scale" data-reveal>
+              <span className="thDot thDot-success" />
+              {t.about.pill}
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    /* ───────────────────────────────────────────
+       CONTACT
+    ─────────────────────────────────────────── */
+    const EXT_ICON = (
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/>
+      </svg>
+    );
+
+    function Contact({ t }) {
+      const sectionRef = useRef(null);
+
+      useEffect(() => {
+        const section = sectionRef.current;
+        if (!section) return;
+        const obs = new IntersectionObserver(([e]) => {
+          if (!e.isIntersecting) return;
+          section.querySelectorAll("[data-reveal]").forEach((el, i) => {
+            setTimeout(() => el.classList.add("is-visible"), i * 80);
+          });
+          // socials stagger separately
+          section.querySelectorAll(".thContact-socials a").forEach((a, i) => {
+            setTimeout(() => a.classList.add("is-visible"), 400 + i * 70);
+          });
+          obs.disconnect();
+        }, { threshold: 0.15 });
+        obs.observe(section);
+        return () => obs.disconnect();
+      }, []);
+
+      return (
+        <section className="thSection thContact" id="contact" ref={sectionRef}>
+          <div className="thSection-inner">
+            <div className="thEyebrow th-reveal" data-reveal>{t.contact.eyebrow}</div>
+            <h2 className="thSection-title th-reveal" data-reveal>{t.contact.title}</h2>
+            <p className="thSection-body th-reveal" data-reveal style={{ maxWidth: 640 }}>
+              {t.contact.body}
+            </p>
+            <div className="thContact-row th-reveal" data-reveal>
+              <a className="thBtn thBtn-primary" href={`mailto:${t.contact.mail}`}>
+                {t.contact.cta}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                </svg>
+              </a>
+              <code className="thContact-mail">{t.contact.mail}</code>
+            </div>
+            <div className="thContact-socials">
+              <a className="th-social" href="https://linkedin.com" target="_blank" rel="noopener noreferrer">LinkedIn {EXT_ICON}</a>
+              <a className="th-social" href="https://github.com"   target="_blank" rel="noopener noreferrer">GitHub {EXT_ICON}</a>
+              <a className="th-social" href="https://malt.fr"      target="_blank" rel="noopener noreferrer">Malt {EXT_ICON}</a>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    /* ───────────────────────────────────────────
+       SCROLL TO TOP
+    ─────────────────────────────────────────── */
+    function ScrollTopBtn() {
+      const ref = useRef(null);
+
+      useEffect(() => {
+        const btn = ref.current;
+        if (!btn) return;
+        const onScroll = () => {
+          if (window.scrollY > 400) btn.classList.add("is-visible");
+          else btn.classList.remove("is-visible");
+        };
+        window.addEventListener("scroll", onScroll, { passive: true });
+        return () => window.removeEventListener("scroll", onScroll);
+      }, []);
+
+      return (
+        <button
+          ref={ref}
+          className="thScrollTop"
+          aria-label="Scroll to top"
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 19V5M5 12l7-7 7 7"/>
+          </svg>
+        </button>
+      );
+    }
+
+    /* ───────────────────────────────────────────
+       FOOTER
+    ─────────────────────────────────────────── */
+    function Footer({ t }) {
+      const ref = useRef(null);
+      useEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+        const obs = new IntersectionObserver(([e]) => {
+          if (!e.isIntersecting) return;
+          el.classList.add("is-visible");
+          obs.disconnect();
+        }, { threshold: 0.5 });
+        obs.observe(el);
+        return () => obs.disconnect();
+      }, []);
+
+      return (
+        <footer className="thFooter">
+          <div className="thFooter-inner th-reveal" ref={ref}>
+            <span>{t.footer}</span>
+            <div className="thFooter-links">
+              <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+              <a href="https://github.com"   target="_blank" rel="noopener noreferrer">GitHub</a>
+              <a href="https://malt.fr"      target="_blank" rel="noopener noreferrer">Malt</a>
+            </div>
+          </div>
+        </footer>
+      );
+    }
+
+    /* ───────────────────────────────────────────
+       APP
+    ─────────────────────────────────────────── */
+    function App() {
+      const [lang, setLangState] = useState(() => {
+        try {
+          const stored = localStorage.getItem("th-lang");
+          if (stored === "fr" || stored === "en") return stored;
+          return (navigator.language || "en").toLowerCase().startsWith("fr") ? "fr" : "en";
+        } catch (e) { return "en"; }
+      });
+
+      const setLang = (l) => {
+        setLangState(l);
+        try { localStorage.setItem("th-lang", l); } catch (e) {}
+      };
+
+      useEffect(() => { document.documentElement.lang = lang; }, [lang]);
+
+      const t = COPY[lang];
+
+      return (
+        <div>
+          <HeroWave />
+          <MouseGlow />
+          <ScrollTopBtn />
+          <Nav lang={lang} setLang={setLang} t={t} />
+          <Hero t={t} lang={lang} />
+          <StatsRow t={t} />
+          <ProjectTimeline t={t} lang={lang} />
+          <SkillsSplit t={t} />
+          <About t={t} />
+          <Contact t={t} />
+          <Footer t={t} />
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<App />);
+  </script>
+</body>
+</html>

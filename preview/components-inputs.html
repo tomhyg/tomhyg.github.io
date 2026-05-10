@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Form inputs</title>
+<link rel="stylesheet" href="_card.css">
+<style>
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field-label{font-family:var(--font-mono);font-size:11px;line-height:14px;letter-spacing:0.08em;text-transform:uppercase;color:var(--fg-3);font-weight:500;}
+  .input{font-family:var(--font-sans);font-size:14px;line-height:22px;background:var(--bg-2);border:1px solid var(--border);color:var(--fg-1);padding:10px 12px;border-radius:8px;outline:none;width:100%;box-sizing:border-box;}
+  .input::placeholder{color:var(--fg-3);}
+  .input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,92,255,0.15);}
+  textarea.input{resize:none;min-height:64px;font-family:var(--font-sans);}
+</style></head>
+<body><div class="card">
+  <div class="eyebrow">Form inputs</div>
+  <div class="row" style="gap:14px;align-items:flex-start;">
+    <div class="field" style="flex:1;">
+      <label class="field-label">Email</label>
+      <input class="input" placeholder="you@company.com" value="recruiter@medtech.fr"/>
+    </div>
+    <div class="field" style="flex:1;">
+      <label class="field-label">Subject</label>
+      <input class="input" placeholder="Surgical robotics — firmware role"/>
+    </div>
+  </div>
+  <div class="field">
+    <label class="field-label">Message</label>
+    <textarea class="input" placeholder="Tell me about the project…"></textarea>
+  </div>
+  <div class="label-mono">bg-2 inset · 1px hairline · 8px radius · accent focus ring (3px halo)</div>
+</div></body></html>

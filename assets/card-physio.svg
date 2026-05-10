@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 150" width="400" height="150" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <clipPath id="wclip">
+      <rect x="78" y="4" width="318" height="142"/>
+    </clipPath>
+    <linearGradient id="fade-r" x1="0" x2="1">
+      <stop offset="0.80" stop-color="#07070B" stop-opacity="0"/>
+      <stop offset="1"    stop-color="#07070B" stop-opacity="1"/>
+    </linearGradient>
+    <linearGradient id="fade-l" x1="0" x2="1">
+      <stop offset="0"    stop-color="#07070B" stop-opacity="1"/>
+      <stop offset="0.10" stop-color="#07070B" stop-opacity="0"/>
+    </linearGradient>
+    <style>
+      @keyframes scrollW { to { transform: translateX(-65px); } }
+      @keyframes fadeIn  { from { opacity:0; } to { opacity:1; } }
+      @keyframes blink   { 0%,100%{opacity:1;} 50%{opacity:0.1;} }
+      .ppg  { animation: scrollW 0.85s linear infinite; }
+      .spo2 { animation: scrollW 1.25s linear infinite; }
+      .v1   { animation: fadeIn 0.5s 0.2s both; }
+      .v2   { animation: fadeIn 0.5s 0.5s both; }
+      .d1   { animation: blink 0.85s ease-in-out infinite; }
+      .d2   { animation: blink 1.25s ease-in-out infinite; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="400" height="150" fill="#07070B"/>
+
+  <!-- Channel separator -->
+  <line x1="0" y1="75" x2="400" y2="75" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+  <!-- Left panel separator -->
+  <line x1="76" y1="0" x2="76" y2="150" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+
+  <!-- ── PPG label + value ── -->
+  <text x="8" y="27" font-family="ui-monospace,monospace" font-size="7" fill="rgba(91,156,246,0.7)" letter-spacing="2">PPG</text>
+  <g class="v1">
+    <text x="8" y="48" font-family="ui-monospace,monospace" font-size="18" font-weight="bold" fill="#5B9CF6">72</text>
+    <text x="8" y="60" font-family="ui-monospace,monospace" font-size="7" fill="rgba(91,156,246,0.45)" letter-spacing="1">BPM</text>
+  </g>
+  <circle cx="64" cy="56" r="3.5" fill="#5B9CF6" class="d1"/>
+
+  <!-- ── SpO₂ label + value ── -->
+  <text x="8" y="92" font-family="ui-monospace,monospace" font-size="7" fill="rgba(45,212,191,0.7)" letter-spacing="2">SpO₂</text>
+  <g class="v2">
+    <text x="8" y="116" font-family="ui-monospace,monospace" font-size="18" font-weight="bold" fill="#2DD4BF">98</text>
+    <text x="8" y="128" font-family="ui-monospace,monospace" font-size="7" fill="rgba(45,212,191,0.45)" letter-spacing="1">%</text>
+  </g>
+  <circle cx="64" cy="118" r="3.5" fill="#2DD4BF" class="d2"/>
+
+  <!-- ── PPG waveform — baseline y=58, peak y=30 ── -->
+  <g clip-path="url(#wclip)">
+    <g class="ppg">
+      <path d="
+        M13,58  C18,58  22,42  28,30  C32,22  36,22  38,34  C40,44  43,54  48,58  L78,58
+        C83,58  87,42  93,30  C97,22  101,22 103,34 C105,44 108,54 113,58 L143,58
+        C148,58 152,42 158,30 C162,22 166,22 168,34 C170,44 173,54 178,58 L208,58
+        C213,58 217,42 223,30 C227,22 231,22 233,34 C235,44 238,54 243,58 L273,58
+        C278,58 282,42 288,30 C292,22 296,22 298,34 C300,44 303,54 308,58 L338,58
+        C343,58 347,42 353,30 C357,22 361,22 363,34 C365,44 368,54 373,58 L403,58
+        C408,58 412,42 418,30 C422,22 426,22 428,34 C430,44 433,54 438,58 L468,58
+        C473,58 477,42 483,30 C487,22 491,22 493,34 C495,44 498,54 503,58 L533,58"
+        fill="none" stroke="#5B9CF6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+  </g>
+
+  <!-- ── SpO₂ waveform — baseline y=118, peak y=96 ── -->
+  <g clip-path="url(#wclip)">
+    <g class="spo2">
+      <path d="
+        M13,118 C20,118 25,102 32,96  C39,90  47,96  54,112 C58,116 62,118 78,118
+        C85,118 90,102  97,96  C104,90 112,96 119,112 C123,116 127,118 143,118
+        C150,118 155,102 162,96 C169,90 177,96 184,112 C188,116 192,118 208,118
+        C215,118 220,102 227,96 C234,90 242,96 249,112 C253,116 257,118 273,118
+        C280,118 285,102 292,96 C299,90 307,96 314,112 C318,116 322,118 338,118
+        C345,118 350,102 357,96 C364,90 372,96 379,112 C383,116 387,118 403,118
+        C410,118 415,102 422,96 C429,90 437,96 444,112 C448,116 452,118 468,118
+        C475,118 480,102 487,96 C494,90 502,96 509,112 C513,116 517,118 533,118"
+        fill="none" stroke="#2DD4BF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+  </g>
+
+  <!-- Fade overlays left + right -->
+  <rect x="78" y="0" width="318" height="150" fill="url(#fade-r)"/>
+  <rect x="78" y="0" width="318" height="150" fill="url(#fade-l)"/>
+</svg>

@@ -1,0 +1,1152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Brooklyn Intelligence — Tom Huyghe</title>
+  <link rel="icon" type="image/png" href="../../../assets/favicon.png" media="(prefers-color-scheme: dark)" />
+  <link rel="icon" type="image/png" href="../../../assets/favicon-light.png" media="(prefers-color-scheme: light)" />
+  <meta name="description" content="AI-powered podcast booking platform. Gemini 2.0, React, Firebase — 10K+ podcasts scored, 195+ data points, zero spreadsheets." />
+  <link rel="stylesheet" href="../../../colors_and_type.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    html, body { margin: 0; padding: 0; }
+    body { background: var(--bg-0); overflow-x: hidden; }
+    img { display: block; max-width: 100%; }
+
+    /* ── Accent override: coral instead of violet ── */
+    :root {
+      --coral:       #E8703A;
+      --coral-soft:  #F5A472;
+      --coral-deep:  #C45522;
+      --coral-glow:  rgba(232,112,58,0.28);
+      --coral-pale:  rgba(232,112,58,0.08);
+    }
+
+    /* ── Reading progress bar ── */
+    .pProgress {
+      position: fixed; top: 0; left: 0; z-index: 200;
+      height: 2px; width: 0%;
+      background: linear-gradient(90deg, var(--coral), var(--coral-soft));
+      transition: width 80ms linear;
+      pointer-events: none;
+    }
+
+    /* ── Mouse glow ── */
+    .pMouseGlow {
+      position: fixed; pointer-events: none; z-index: 4;
+      width: 700px; height: 700px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(232,112,58,0.07) 0%, transparent 65%);
+      transform: translate(-50%, -50%);
+      opacity: 0; transition: opacity 0.4s;
+    }
+
+    /* ── Reveal variants ── */
+    .rv {
+      opacity: 0; transform: translateY(22px);
+      transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
+    }
+    .rv.on { opacity: 1; transform: translateY(0); }
+    .rv-left {
+      opacity: 0; transform: translateX(-28px);
+      transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
+    }
+    .rv-left.on { opacity: 1; transform: translateX(0); }
+    .rv-right {
+      opacity: 0; transform: translateX(28px);
+      transition: opacity 0.75s var(--ease), transform 0.75s var(--ease);
+    }
+    .rv-right.on { opacity: 1; transform: translateX(0); }
+    .rv-scale {
+      opacity: 0; transform: scale(0.94);
+      transition: opacity 0.6s var(--ease), transform 0.6s var(--ease);
+    }
+    .rv-scale.on { opacity: 1; transform: scale(1); }
+    @media (prefers-reduced-motion: reduce) {
+      .rv,.rv-left,.rv-right,.rv-scale { opacity:1; transform:none; transition:none; }
+    }
+
+    /* ── Nav ── */
+    .pNav {
+      position: sticky; top: 0; z-index: 50;
+      border-bottom: 1px solid transparent;
+      transition: background var(--motion) var(--ease), border-color var(--motion) var(--ease);
+    }
+    .pNav.scrolled {
+      background: rgba(7,7,11,0.85);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border-bottom-color: var(--border);
+    }
+    .pNav-inner {
+      max-width: var(--max-width); margin: 0 auto;
+      padding: 10px var(--gutter);
+      display: flex; align-items: center;
+      gap: var(--s-5);
+    }
+    .pNav-brand {
+      display: inline-flex; align-items: center; gap: 10px;
+      font-weight: 600; font-size: 15px; letter-spacing: -0.01em;
+      color: var(--fg-1); text-decoration: none; white-space: nowrap; flex-shrink: 0;
+    }
+    .pNav-brand:hover { color: var(--fg-1); }
+    .pNav-brand-logo {
+      height: 100px; width: auto; object-fit: contain; flex-shrink: 0;
+      filter: brightness(0) invert(1);
+      transition: filter var(--motion-fast) var(--ease);
+      margin: -18px -12px;
+    }
+    .pNav-brand:hover .pNav-brand-logo {
+      filter: brightness(0) invert(1) drop-shadow(0 0 8px rgba(124,92,255,0.6));
+    }
+    .pNav-links { display: flex; gap: var(--s-5); flex: 1; }
+    .pNav-links a {
+      font-size: 13px; color: var(--fg-2); font-weight: 500;
+      white-space: nowrap; text-decoration: none;
+      position: relative; padding-bottom: 2px;
+      transition: color var(--motion-fast) var(--ease);
+    }
+    .pNav-links a::after {
+      content: ""; position: absolute; bottom: -2px; left: 0;
+      width: 0; height: 1px; background: var(--accent);
+      transition: width var(--motion) var(--ease);
+    }
+    .pNav-links a:hover { color: var(--fg-1); }
+    .pBurger {
+      display: none; flex-direction: column; gap: 5px;
+      background: none; border: none; padding: 4px; cursor: pointer; margin-left: auto;
+    }
+    .pBurger span {
+      display: block; width: 20px; height: 1.5px; background: var(--fg-2);
+      transition: transform var(--motion-fast) var(--ease), opacity var(--motion-fast) var(--ease);
+      transform-origin: center;
+    }
+    .pBurger.is-open span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+    .pBurger.is-open span:nth-child(2) { opacity: 0; }
+    .pBurger.is-open span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+    .pMobileMenu {
+      display: none; position: fixed; inset: 0; top: 57px;
+      background: rgba(7,7,11,0.97); backdrop-filter: blur(16px);
+      z-index: 49; flex-direction: column;
+      padding: var(--s-7) var(--gutter); gap: var(--s-5);
+      border-top: 1px solid var(--border);
+    }
+    .pMobileMenu.is-open { display: flex; }
+    .pMobileMenu a {
+      font-size: 22px; font-weight: 600; color: var(--fg-2);
+      text-decoration: none; letter-spacing: -0.01em;
+      display: flex; align-items: center; gap: 14px;
+      transition: color var(--motion-fast) var(--ease);
+    }
+    .pMobileMenu a:hover { color: var(--fg-1); }
+
+    /* ── Hero ── */
+    .pHero { position: relative; overflow: hidden; min-height: 92vh; }
+    .pHero-bg { position: absolute; inset: 0; z-index: 0; }
+    .pHero-texture {
+      position: absolute; inset: 0;
+      background: url("../../../assets/texture-amber.jpg") center/cover;
+      mix-blend-mode: screen; opacity: 0.09;
+    }
+    .pHero-veil {
+      position: absolute; inset: 0;
+      background: linear-gradient(180deg,
+        rgba(7,7,11,0.15) 0%,
+        rgba(7,7,11,0.55) 55%,
+        var(--bg-0) 100%);
+    }
+    .pHero-ambient {
+      position: absolute; right: 8%; top: 50%; transform: translateY(-50%);
+      width: 520px; height: 520px; border-radius: 50%;
+      background: radial-gradient(circle,
+        rgba(232,112,58,0.14) 0%,
+        rgba(245,164,114,0.05) 45%,
+        transparent 70%);
+      pointer-events: none; z-index: 1;
+    }
+    .pHero-inner {
+      position: relative; z-index: 2;
+      max-width: var(--max-width); margin: 0 auto;
+      padding: 0 var(--gutter);
+      min-height: 92vh;
+      display: grid; grid-template-columns: 1fr 1fr;
+      align-items: center; gap: var(--s-8);
+    }
+    .pHero-left {
+      display: flex; flex-direction: column; gap: var(--s-5);
+      padding: var(--s-10) 0 var(--s-8);
+    }
+    .pHero-right {
+      display: flex; align-items: center; justify-content: center;
+      padding: var(--s-8) 0;
+    }
+
+    /* Peach logo as hero visual */
+    .pHero-logo {
+      width: 100%; max-width: 340px;
+      filter: drop-shadow(0 24px 60px rgba(0,0,0,0.5))
+              drop-shadow(0 0 80px rgba(232,112,58,0.20));
+      animation: peachFloat 7s ease-in-out infinite;
+      will-change: transform;
+    }
+    @keyframes peachFloat {
+      0%,100% { transform: translateY(0px) rotate(-1.5deg) scale(1); }
+      50%      { transform: translateY(-18px) rotate(1.5deg) scale(1.02); }
+    }
+
+    .pHero-eyebrow {
+      font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--fg-3);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .pHero-eyebrow::before { content: ""; width: 20px; height: 1px; background: var(--coral); flex-shrink: 0; }
+    .pHero-title {
+      font-size: clamp(52px, 7vw, 100px);
+      line-height: 0.95; font-weight: 600;
+      letter-spacing: -0.04em; color: var(--fg-1); margin: 0;
+    }
+    .pHero-title span {
+      background: linear-gradient(135deg, var(--coral), var(--coral-soft));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .pHero-sub { font-size: 17px; line-height: 27px; color: var(--fg-2); max-width: 440px; margin: 0; }
+    .pHero-scroll {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-family: var(--font-mono); font-size: 10px;
+      letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-4);
+    }
+    .pHero-scroll svg { animation: scrollBounce 2.2s ease-in-out infinite; }
+    @keyframes scrollBounce { 0%,100% { transform:translateY(0); } 50% { transform:translateY(5px); } }
+
+    /* Beta badge in hero */
+    .pHero-beta {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--coral);
+      background: var(--coral-pale); border: 1px solid rgba(232,112,58,0.22);
+      padding: 5px 12px; border-radius: 999px; align-self: flex-start;
+    }
+    .pHero-beta::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--coral); }
+
+    /* ── Stats bar ── */
+    .pStats {
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: rgba(14,14,20,0.85);
+      backdrop-filter: blur(10px);
+    }
+    .pStats-inner {
+      max-width: var(--max-width); margin: 0 auto;
+      padding: 0 var(--gutter); display: flex;
+    }
+    .pStat {
+      flex: 1; padding: var(--s-5) var(--s-4);
+      border-right: 1px solid var(--border);
+      opacity: 0; transform: translateY(14px);
+      transition: opacity 0.55s var(--ease), transform 0.55s var(--ease);
+    }
+    .pStat:last-child { border-right: 0; }
+    .pStat.on { opacity: 1; transform: translateY(0); }
+    .pStat-val {
+      font-size: 28px; font-weight: 600; letter-spacing: -0.025em;
+      line-height: 1; margin-bottom: 5px;
+      background: linear-gradient(135deg, var(--fg-1) 30%, var(--coral-soft) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .pStat-label {
+      font-family: var(--font-mono); font-size: 10px;
+      letter-spacing: 0.07em; text-transform: uppercase; color: var(--fg-3);
+    }
+
+    /* ── Sections ── */
+    .pSection { border-top: 1px solid var(--border); }
+    .pSection-inner {
+      max-width: var(--max-width); margin: 0 auto;
+      padding: var(--s-9) var(--gutter);
+      display: grid; grid-template-columns: 220px 1fr;
+      gap: var(--s-9); align-items: start;
+    }
+    .pSection-label {
+      font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--fg-3);
+      position: sticky; top: 80px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .pSection-label::before { content: ""; width: 16px; height: 1px; background: var(--coral); flex-shrink: 0; }
+    .pSection-body { display: flex; flex-direction: column; gap: var(--s-6); }
+    .pSection-title {
+      font-size: 38px; line-height: 44px; font-weight: 600;
+      letter-spacing: -0.025em; color: var(--fg-1); margin: 0;
+    }
+    .pSection-text {
+      font-size: 16px; line-height: 27px; color: var(--fg-2); margin: 0; max-width: 640px;
+    }
+
+    /* ── Spec table ── */
+    .pSpecs { display: flex; flex-direction: column; }
+    .pSpec {
+      display: grid; grid-template-columns: 160px 1fr;
+      gap: var(--s-4); padding: 13px 0;
+      border-top: 1px solid var(--border);
+    }
+    .pSpec:first-child { border-top: 0; }
+    .pSpec dt {
+      font-family: var(--font-mono); font-size: 11px;
+      letter-spacing: 0.07em; text-transform: uppercase;
+      color: var(--fg-3); padding-top: 2px;
+    }
+    .pSpec dd { margin: 0; font-size: 14px; line-height: 22px; color: var(--fg-1); }
+
+    /* ── Chips ── */
+    .pChips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .pChip {
+      font-family: var(--font-mono); font-size: 11px;
+      padding: 5px 11px; border: 1px solid var(--border);
+      border-radius: 999px; color: var(--fg-2); letter-spacing: 0.02em;
+      transition: border-color var(--motion-fast) var(--ease), color var(--motion-fast) var(--ease);
+      cursor: default;
+    }
+    .pChip:hover { border-color: var(--coral); color: var(--coral-soft); }
+
+    /* ── Feature cards grid ── */
+    .pFeatures {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: var(--s-4);
+    }
+    .pFeature {
+      background: var(--bg-1); border: 1px solid var(--border);
+      border-radius: var(--r-3); padding: var(--s-5);
+      display: flex; flex-direction: column; gap: 10px;
+      transition: border-color var(--motion) var(--ease), background var(--motion) var(--ease);
+    }
+    .pFeature:hover { border-color: var(--border-strong); background: var(--bg-2); }
+    .pFeature-icon {
+      font-size: 20px; line-height: 1;
+    }
+    .pFeature-name {
+      font-size: 14px; font-weight: 600; color: var(--fg-1);
+      letter-spacing: -0.01em;
+    }
+    .pFeature-desc {
+      font-size: 13px; line-height: 20px; color: var(--fg-2);
+    }
+
+    /* ── Score card visual ── */
+    .pScoreCard {
+      background: var(--bg-1); border: 1px solid var(--border);
+      border-radius: var(--r-3); padding: var(--s-5);
+      display: flex; flex-direction: column; gap: var(--s-4);
+    }
+    .pScoreCard-header { display: flex; align-items: center; justify-content: space-between; }
+    .pScoreCard-title { font-size: 14px; font-weight: 600; color: var(--fg-1); }
+    .pScoreCard-score {
+      font-size: 32px; font-weight: 700; letter-spacing: -0.03em;
+      background: linear-gradient(135deg, var(--coral), var(--coral-soft));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .pScoreCard-bar { height: 5px; background: var(--bg-2); border-radius: 999px; overflow: hidden; }
+    .pScoreCard-fill {
+      height: 100%; border-radius: 999px;
+      background: linear-gradient(90deg, var(--coral), var(--coral-soft));
+      width: var(--w, 88%);
+    }
+    .pScoreCard-meta { font-family: var(--font-mono); font-size: 10px; color: var(--fg-3); letter-spacing: 0.05em; }
+
+    /* ── Result cards ── */
+    .pResults { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4); }
+    .pResult {
+      background: var(--bg-1); border: 1px solid var(--border);
+      border-radius: var(--r-3); padding: var(--s-5) var(--s-5) var(--s-4);
+      display: flex; flex-direction: column; gap: 6px;
+      transition: border-color var(--motion) var(--ease), background var(--motion) var(--ease);
+    }
+    .pResult:hover { border-color: var(--border-strong); background: var(--bg-2); }
+    .pResult-val {
+      font-size: 42px; font-weight: 600; letter-spacing: -0.03em; line-height: 1;
+      background: linear-gradient(135deg, var(--fg-1) 30%, var(--coral-soft) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .pResult-label { font-size: 13px; line-height: 20px; color: var(--fg-2); }
+
+    /* ── Walkthrough ── */
+    .pWalkthrough { display: flex; flex-direction: column; gap: var(--s-8); }
+    .pStep { display: flex; flex-direction: column; gap: var(--s-4); }
+    .pStep-head {
+      display: flex; align-items: center; gap: var(--s-3);
+    }
+    .pStep-num {
+      font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em;
+      color: var(--accent); flex-shrink: 0;
+    }
+    .pStep-name {
+      font-size: 14px; font-weight: 600; color: var(--fg-1);
+    }
+    .pStep-desc {
+      font-size: 13px; line-height: 20px; color: var(--fg-2);
+    }
+    .pStep-screen {
+      border-radius: var(--r-2); border: 1px solid var(--border);
+      overflow: hidden; position: relative;
+    }
+    .pStep-screen img {
+      width: 100%; display: block;
+      max-height: 420px; object-fit: cover; object-position: top;
+      transition: max-height 0.5s var(--ease);
+    }
+    .pStep-screen:hover img { max-height: 600px; }
+    .pStep-screen::after {
+      content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+      height: 60px;
+      background: linear-gradient(to bottom, transparent, var(--bg-0));
+      pointer-events: none;
+    }
+
+    /* ── Pipeline stages ── */
+    .pPipeline { display: flex; gap: 0; overflow: hidden; border-radius: var(--r-2); border: 1px solid var(--border); }
+    .pStage {
+      flex: 1; padding: var(--s-4) var(--s-3);
+      border-right: 1px solid var(--border); text-align: center;
+      transition: background var(--motion-fast) var(--ease);
+    }
+    .pStage:last-child { border-right: 0; }
+    .pStage:hover { background: var(--bg-2); }
+    .pStage-label {
+      font-family: var(--font-mono); font-size: 10px;
+      letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg-3);
+      margin-bottom: 6px;
+    }
+    .pStage-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      margin: 0 auto;
+    }
+    .pStage.pending   .pStage-dot { background: var(--fg-4); }
+    .pStage.contacted .pStage-dot { background: var(--warn); }
+    .pStage.interested .pStage-dot { background: var(--coral); }
+    .pStage.booked    .pStage-dot { background: var(--success); }
+    .pStage.completed .pStage-dot { background: var(--accent); }
+
+    /* ── GitHub CTA ── */
+    .pGithub {
+      display: inline-flex; align-items: center; gap: var(--s-3);
+      background: var(--bg-1); border: 1px solid var(--border);
+      border-radius: var(--r-2); padding: 12px 20px;
+      text-decoration: none; color: var(--fg-1);
+      font-size: 14px; font-weight: 500; align-self: flex-start;
+      transition: border-color var(--motion-fast) var(--ease),
+                  background var(--motion-fast) var(--ease),
+                  box-shadow var(--motion-fast) var(--ease);
+    }
+    .pGithub:hover {
+      border-color: var(--coral);
+      background: var(--coral-pale);
+      box-shadow: 0 0 0 1px rgba(232,112,58,0.2);
+      color: var(--fg-1);
+    }
+    .pLiveLink {
+      display: inline-flex; align-items: center; gap: var(--s-3);
+      background: var(--coral); border: 1px solid var(--coral);
+      border-radius: var(--r-2); padding: 12px 20px;
+      text-decoration: none; color: white;
+      font-size: 14px; font-weight: 600; align-self: flex-start;
+      transition: background var(--motion-fast) var(--ease), transform var(--motion-fast) var(--ease);
+    }
+    .pLiveLink:hover { background: var(--coral-deep); transform: translateY(-1px); color: white; }
+
+    /* ── Lang toggle ── */
+    .pNav-right { display:flex; align-items:center; gap:var(--s-3); }
+    .pLang { display:flex; align-items:center; gap:2px; background:var(--bg-2); border:1px solid var(--border); border-radius:var(--r-1); padding:2px; }
+    .pLangBtn { background:none; border:none; cursor:pointer; font-family:var(--font-mono); font-size:10px; letter-spacing:.06em; color:var(--fg-3); padding:3px 7px; border-radius:2px; transition:all var(--motion-fast) var(--ease); }
+    .pLangBtn.is-active { background:var(--bg-3); color:var(--fg-1); }
+    .pLangBtn:hover:not(.is-active) { color:var(--fg-2); }
+
+    /* ── Next project ── */
+    .pNext { border-top: 1px solid var(--border); background: var(--bg-1); }
+    .pNext-inner {
+      max-width: var(--max-width); margin: 0 auto;
+      padding: var(--s-8) var(--gutter);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .pNext-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--fg-3); }
+    .pNext-link {
+      font-size: 24px; font-weight: 600; letter-spacing: -0.015em;
+      color: var(--fg-1); text-decoration: none;
+      display: inline-flex; align-items: center; gap: var(--s-3);
+      transition: color var(--motion-fast) var(--ease);
+    }
+    .pNext-link svg { transition: transform var(--motion-fast) var(--ease); }
+    .pNext-link:hover { color: var(--coral-soft); }
+    .pNext-link:hover svg { transform: translateX(5px); }
+
+    /* ── Footer ── */
+    footer { border-top: 1px solid var(--border); }
+    .pFooter {
+      max-width: var(--max-width); margin: 0 auto;
+      padding: var(--s-5) var(--gutter);
+      display: flex; justify-content: space-between; align-items: center;
+      font-family: var(--font-mono); font-size: 11px;
+      letter-spacing: 0.04em; color: var(--fg-3);
+    }
+
+    /* ── Stagger delays ── */
+    .pSection-body > *:nth-child(1) { transition-delay: 0ms; }
+    .pSection-body > *:nth-child(2) { transition-delay: 80ms; }
+    .pSection-body > *:nth-child(3) { transition-delay: 160ms; }
+    .pSection-body > *:nth-child(4) { transition-delay: 240ms; }
+    .pSection-body > *:nth-child(5) { transition-delay: 320ms; }
+
+    /* ── Responsive ── */
+    @media (max-width: 960px) {
+      .pNav-links { display: none; }
+      .pBurger { display: flex; }
+      .pHero-inner { grid-template-columns: 1fr; min-height: auto; }
+      .pHero-right { display: none; }
+      .pHero-left { padding: var(--s-9) 0 var(--s-7); }
+      .pSection-inner { grid-template-columns: 1fr; gap: var(--s-6); }
+      .pSection-label { position: static; }
+      .pStats-inner { flex-wrap: wrap; }
+      .pStat { flex: 1 1 45%; }
+      .pResults, .pFeatures { grid-template-columns: 1fr; }
+      .pNext-inner { flex-direction: column; gap: var(--s-4); align-items: flex-start; }
+      .pPipeline { flex-wrap: wrap; }
+      .pStage { flex: 1 1 30%; }
+    }
+    @media (max-width: 600px) {
+      .pHero-title { font-size: 52px; }
+      .pSection-inner { padding: var(--s-7) var(--s-5); }
+      .pStat { flex: 1 1 100%; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="pProgress" id="pProgress"></div>
+  <div class="pMouseGlow" id="pMouseGlow"></div>
+
+  <!-- NAV -->
+  <header class="pNav" id="pNav">
+    <div class="pNav-inner">
+      <a href="../index.html" class="pNav-brand">
+        <img src="../../../assets/logo.png" alt="" class="pNav-brand-logo" />
+        Tom Huyghe
+      </a>
+      <nav class="pNav-links">
+        <a href="../index.html#work" data-i18n="nav.work">Work</a>
+        <a href="../index.html#skills" data-i18n="nav.skills">Skills</a>
+        <a href="../index.html#about" data-i18n="nav.about">About</a>
+        <a href="../index.html#contact" data-i18n="nav.contact">Contact</a>
+      </nav>
+      <div class="pLang">
+        <button class="pLangBtn" data-lang="en" onclick="setLang('en')">EN</button>
+        <button class="pLangBtn" data-lang="fr" onclick="setLang('fr')">FR</button>
+      </div>
+      <button class="pBurger" id="pBurger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+  <div class="pMobileMenu" id="pMobileMenu">
+    <a href="../index.html#work" data-i18n="nav.work" onclick="closeMobileMenu()">Work</a>
+    <a href="../index.html#skills" data-i18n="nav.skills" onclick="closeMobileMenu()">Skills</a>
+    <a href="../index.html#about" data-i18n="nav.about" onclick="closeMobileMenu()">About</a>
+    <a href="../index.html#contact" data-i18n="nav.contact" onclick="closeMobileMenu()">Contact</a>
+    <div class="pLang" style="margin-top:var(--s-4)">
+      <button class="pLangBtn" data-lang="en" onclick="setLang('en');closeMobileMenu()">EN</button>
+      <button class="pLangBtn" data-lang="fr" onclick="setLang('fr');closeMobileMenu()">FR</button>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <section class="pHero">
+    <div class="pHero-bg">
+      <div class="pHero-texture"></div>
+      <div class="pHero-veil"></div>
+    </div>
+    <div class="pHero-ambient"></div>
+
+    <div class="pHero-inner">
+      <div class="pHero-left">
+        <div class="pHero-eyebrow rv" id="rv0" data-i18n="hero.eyebrow">FULLSTACK · 2026 · SAAS</div>
+        <h1 class="pHero-title rv" id="rv1">BROOKLYN<br /><span>INTELLIGENCE</span></h1>
+        <p class="pHero-sub rv" id="rv2" data-i18n="hero.sub">
+          AI-powered podcast booking platform. Brooklynn finds, scores, and books the right podcasts for your clients — so PR agencies close more placements, faster.
+        </p>
+        <div class="pHero-beta rv" id="rv3" data-i18n="hero.beta">Live beta · app.badassery-hq.com</div>
+        <div class="pHero-scroll rv" id="rv4">
+          <span data-i18n="hero.scroll">Scroll to explore</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M12 5v14M5 12l7 7 7-7"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="pHero-right rv-right" id="rv5">
+        <img src="../../../assets/badassery-logo.webp" alt="Badassery — Brooklyn Intelligence" class="pHero-logo" id="pHeroLogo" />
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS BAR -->
+  <div class="pStats">
+    <div class="pStats-inner">
+      <div class="pStat" id="st0">
+        <div class="pStat-val" data-target="10" data-suffix="K+">10K+</div>
+        <div class="pStat-label" data-i18n="stat.0">Podcasts scored</div>
+      </div>
+      <div class="pStat" id="st1">
+        <div class="pStat-val" data-target="195" data-suffix="+">195+</div>
+        <div class="pStat-label" data-i18n="stat.1">Data points / podcast</div>
+      </div>
+      <div class="pStat" id="st2">
+        <div class="pStat-val" data-target="25" data-suffix="">25</div>
+        <div class="pStat-label" data-i18n="stat.2">App pages</div>
+      </div>
+      <div class="pStat" id="st3">
+        <div class="pStat-val" data-target="0" data-suffix="">0</div>
+        <div class="pStat-label" data-i18n="stat.3">Spreadsheets needed</div>
+      </div>
+      <div class="pStat" id="st4">
+        <div class="pStat-val">2.0</div>
+        <div class="pStat-label" data-i18n="stat.4">Gemini Flash</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTEXT -->
+  <section class="pSection">
+    <div class="pSection-inner">
+      <div class="pSection-label rv-left" data-i18n="ctx.label">Context</div>
+      <div class="pSection-body">
+        <h2 class="pSection-title rv" data-i18n="ctx.title">PR agencies book podcasts with spreadsheets and guesswork.</h2>
+        <p class="pSection-text rv" data-i18n="ctx.body1">
+          Finding the right podcasts for a speaker client takes hours of manual research — cross-referencing audience data, checking if hosts accept guests, identifying contact emails. Most agencies rely on personal relationships and static lists that go stale immediately.
+        </p>
+        <p class="pSection-text rv" data-i18n="ctx.body2">
+          Brooklyn Intelligence is a full-stack SaaS built for podcast booking agencies. It replaces the spreadsheet with an AI-powered database of <strong style="color:var(--fg-1)">10K+ scored shows</strong>, a Kanban outreach pipeline, Gmail integration, and a white-label client portal — all built solo, from zero to live beta.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRODUCT -->
+  <section class="pSection">
+    <div class="pSection-inner">
+      <div class="pSection-label rv-left" data-i18n="prod.label">Product</div>
+      <div class="pSection-body">
+        <h2 class="pSection-title rv" data-i18n="prod.title">Six features. One workflow.</h2>
+        <p class="pSection-text rv" data-i18n="prod.text">
+          Every feature was designed around the actual daily workflow of a podcast booking agent — from discovery and scoring, to outreach and client reporting.
+        </p>
+        <div class="pFeatures rv-scale">
+          <div class="pFeature">
+            <div class="pFeature-icon">🤖</div>
+            <div class="pFeature-name" data-i18n="feat.0.name">AI Podcast Matching</div>
+            <div class="pFeature-desc" data-i18n="feat.0.desc">Gemini 2.0 Flash analyzes a client's profile and surfaces the most relevant podcasts from the database, ranked by fit.</div>
+          </div>
+          <div class="pFeature">
+            <div class="pFeature-icon">🏆</div>
+            <div class="pFeature-name" data-i18n="feat.1.name">Badassery Score</div>
+            <div class="pFeature-desc" data-i18n="feat.1.desc">Every podcast gets a 0–100 score based on audience, engagement, niche alignment, and guest-friendliness. No more guessing.</div>
+          </div>
+          <div class="pFeature">
+            <div class="pFeature-icon">📋</div>
+            <div class="pFeature-name" data-i18n="feat.2.name">Outreach Kanban</div>
+            <div class="pFeature-desc" data-i18n="feat.2.desc">Full pipeline per client: Pending → Contacted → Interested → Booked → Completed. Drag-and-drop with @dnd-kit.</div>
+          </div>
+          <div class="pFeature">
+            <div class="pFeature-icon">📨</div>
+            <div class="pFeature-name" data-i18n="feat.3.name">Gmail Integration</div>
+            <div class="pFeature-desc" data-i18n="feat.3.desc">Send personalized pitches and track replies directly inside the app via Gmail SMTP + Cloud Functions.</div>
+          </div>
+          <div class="pFeature">
+            <div class="pFeature-icon">🌐</div>
+            <div class="pFeature-name" data-i18n="feat.4.name">Client Portal</div>
+            <div class="pFeature-desc" data-i18n="feat.4.desc">Branded portal where clients view their placements, approve podcast suggestions, and track booking progress.</div>
+          </div>
+          <div class="pFeature">
+            <div class="pFeature-icon">🗄️</div>
+            <div class="pFeature-name" data-i18n="feat.5.name">Podcast Database</div>
+            <div class="pFeature-desc" data-i18n="feat.5.desc">5–10K shows enriched with 195+ fields: download stats, social accounts, host contacts, past episodes, Apple & Spotify charts.</div>
+          </div>
+        </div>
+
+        <!-- Pipeline visual -->
+        <div class="pPipeline rv">
+          <div class="pStage pending">
+            <div class="pStage-dot"></div>
+            <div class="pStage-label" data-i18n="pipe.0">Pending</div>
+          </div>
+          <div class="pStage contacted">
+            <div class="pStage-dot"></div>
+            <div class="pStage-label" data-i18n="pipe.1">Contacted</div>
+          </div>
+          <div class="pStage interested">
+            <div class="pStage-dot"></div>
+            <div class="pStage-label" data-i18n="pipe.2">Interested</div>
+          </div>
+          <div class="pStage booked">
+            <div class="pStage-dot"></div>
+            <div class="pStage-label" data-i18n="pipe.3">Booked</div>
+          </div>
+          <div class="pStage completed">
+            <div class="pStage-dot"></div>
+            <div class="pStage-label" data-i18n="pipe.4">Completed</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WALKTHROUGH -->
+  <section class="pSection">
+    <div class="pSection-inner">
+      <div class="pSection-label rv-left" data-i18n="walk.label">In action</div>
+      <div class="pSection-body">
+        <h2 class="pSection-title rv" data-i18n="walk.title">Four screens. One workflow.</h2>
+        <div class="pWalkthrough">
+
+          <div class="pStep rv-scale">
+            <div class="pStep-head">
+              <span class="pStep-num">01</span>
+              <span class="pStep-name" data-i18n="walk.1.name">Discovery</span>
+            </div>
+            <p class="pStep-desc" data-i18n="walk.1.desc">195 data points par show. Filtres par catégorie, audience, score, pays. Chaque podcast scoré et classé en temps réel.</p>
+            <div class="pStep-screen">
+              <img src="../../../assets/brooklyn-screen-1.png" alt="Podcast Discovery" loading="lazy" />
+            </div>
+          </div>
+
+          <div class="pStep rv-scale">
+            <div class="pStep-head">
+              <span class="pStep-num">02</span>
+              <span class="pStep-name" data-i18n="walk.0.name">AI Matching</span>
+            </div>
+            <p class="pStep-desc" data-i18n="walk.0.desc">Gemini 2.0 Flash parcourt les 65 797 shows de la base et calcule un score de matching entre chaque podcast et le profil du client. Mis en cache 24h.</p>
+            <div class="pStep-screen">
+              <img src="../../../assets/brooklyn-screen-2.png" alt="AI Matching" loading="lazy" />
+            </div>
+          </div>
+
+          <div class="pStep rv-scale">
+            <div class="pStep-head">
+              <span class="pStep-num">03</span>
+              <span class="pStep-name" data-i18n="walk.2.name">Client Matching</span>
+            </div>
+            <p class="pStep-desc" data-i18n="walk.2.desc">Chaque client a son propre profil IA. Brooklynn fait correspondre les 65K shows à ses critères — 1282 matches pour Sarah Mitchell, triés par pertinence.</p>
+            <div class="pStep-screen">
+              <img src="../../../assets/brooklyn-screen-3.png" alt="Client Matching" loading="lazy" />
+            </div>
+          </div>
+
+          <div class="pStep rv-scale">
+            <div class="pStep-head">
+              <span class="pStep-num">04</span>
+              <span class="pStep-name" data-i18n="walk.3.name">Outreach Pipeline</span>
+            </div>
+            <p class="pStep-desc" data-i18n="walk.3.desc">Kanban par client. Pipeline → Pitch IA généré → In Contact → Replied → Booked. Intégration Gmail directe depuis l'app.</p>
+            <div class="pStep-screen">
+              <img src="../../../assets/brooklyn-screen-4.png" alt="Outreach Pipeline" loading="lazy" />
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ARCHITECTURE -->
+  <section class="pSection">
+    <div class="pSection-inner">
+      <div class="pSection-label rv-left" data-i18n="arch.label">Architecture</div>
+      <div class="pSection-body">
+        <h2 class="pSection-title rv" data-i18n="arch.title">React + Firebase + Gemini. Built to scale.</h2>
+        <p class="pSection-text rv" data-i18n="arch.text">
+          Serverless architecture built for a small team. Firebase handles auth, real-time database, and hosting. Cloud Functions manage Gmail SMTP and background tasks. Gemini 2.0 Flash powers the AI matching pipeline — fast inference, low cost.
+        </p>
+        <dl class="pSpecs rv">
+          <div class="pSpec"><dt>Frontend</dt><dd>React 19 + TypeScript — 25 pages, 21 components</dd></div>
+          <div class="pSpec"><dt>Backend</dt><dd>Firebase Firestore (NoSQL, real-time) + Cloud Functions (Node.js)</dd></div>
+          <div class="pSpec"><dt>Auth</dt><dd>Custom role system — admin, agency, client — with password flows</dd></div>
+          <div class="pSpec"><dt>AI</dt><dd>Gemini 2.0 Flash — profile analysis, semantic matching, scoring rationale</dd></div>
+          <div class="pSpec"><dt>Email</dt><dd>Gmail SMTP via Cloud Function — send + thread tracking inside app</dd></div>
+          <div class="pSpec"><dt>Data pipeline</dt><dd>Node.js + Python scripts — parallel scoring, weekly refresh, 48 checkpoints</dd></div>
+          <div class="pSpec"><dt>Hosting</dt><dd>Firebase Hosting + custom domain app.badassery-hq.com</dd></div>
+          <div class="pSpec"><dt>CI/CD</dt><dd>GitHub Actions — weekly podcast refresh + automated deploys</dd></div>
+        </dl>
+        <div class="pChips rv">
+          <span class="pChip">React 19</span>
+          <span class="pChip">TypeScript</span>
+          <span class="pChip">Firebase</span>
+          <span class="pChip">Firestore</span>
+          <span class="pChip">Cloud Functions</span>
+          <span class="pChip">Gemini 2.0 Flash</span>
+          <span class="pChip">Node.js</span>
+          <span class="pChip">Python</span>
+          <span class="pChip">Gmail SMTP</span>
+          <span class="pChip">GitHub Actions</span>
+          <span class="pChip">Tailwind CSS</span>
+          <span class="pChip">dnd-kit</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DATA PIPELINE -->
+  <section class="pSection">
+    <div class="pSection-inner">
+      <div class="pSection-label rv-left" data-i18n="data.label">Data pipeline</div>
+      <div class="pSection-body">
+        <h2 class="pSection-title rv" data-i18n="data.title">10K podcasts. Scored weekly. Automatically.</h2>
+        <p class="pSection-text rv" data-i18n="data.text">
+          The core value of the platform is the database quality. A multi-stage enrichment pipeline collects and refreshes data from RSS feeds, Apple Podcasts, Spotify Charts, YouTube, and social networks — then runs parallel AI scoring with Gemini to compute the Badassery Score for every show.
+        </p>
+        <dl class="pSpecs rv">
+          <div class="pSpec"><dt>Sources</dt><dd>RSS feeds · Apple Podcasts · Spotify · YouTube · Instagram</dd></div>
+          <div class="pSpec"><dt>Enrichment</dt><dd>Python pipeline — podcast_enricher_v3.py — RSS + Apple + YouTube</dd></div>
+          <div class="pSpec"><dt>AI scoring</dt><dd>parallel_scoring_v2.js — Gemini batch scoring at scale</dd></div>
+          <div class="pSpec"><dt>Refresh</dt><dd>GitHub Actions weekly_refresh — automated, checkpointed (48 files)</dd></div>
+          <div class="pSpec"><dt>Fields</dt><dd>195+ per podcast — stats, contacts, social reach, episode data</dd></div>
+          <div class="pSpec"><dt>Scale</dt><dd>5–10K shows scored · handles interruption via checkpoint resume</dd></div>
+        </dl>
+
+        <!-- Score card sample -->
+        <div class="pScoreCard rv">
+          <div class="pScoreCard-header">
+            <div>
+              <div style="font-size:12px;font-family:var(--font-mono);letter-spacing:0.06em;text-transform:uppercase;color:var(--fg-3);margin-bottom:4px" data-i18n="data.sample">Sample output</div>
+              <div class="pScoreCard-title">Invest Like the Best</div>
+            </div>
+            <div class="pScoreCard-score">88</div>
+          </div>
+          <div class="pScoreCard-bar"><div class="pScoreCard-fill" style="--w:88%"></div></div>
+          <div style="display:flex;gap:var(--s-6);margin-top:var(--s-2)">
+            <div><div class="pScoreCard-meta">AUDIENCE</div><div style="color:var(--fg-1);font-size:13px;margin-top:2px">2.1M / mo</div></div>
+            <div><div class="pScoreCard-meta">NICHE FIT</div><div style="color:var(--fg-1);font-size:13px;margin-top:2px">Finance · VC</div></div>
+            <div><div class="pScoreCard-meta">GUEST-FRIENDLY</div><div style="color:var(--success);font-size:13px;margin-top:2px">Yes</div></div>
+            <div><div class="pScoreCard-meta">CONTACT</div><div style="color:var(--success);font-size:13px;margin-top:2px">Found</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATUS -->
+  <section class="pSection">
+    <div class="pSection-inner">
+      <div class="pSection-label rv-left" data-i18n="status.label">Status</div>
+      <div class="pSection-body">
+        <h2 class="pSection-title rv" data-i18n="status.title">Live beta. Solo-built. End-to-end.</h2>
+        <p class="pSection-text rv" data-i18n="status.text">
+          Brooklyn Intelligence is deployed, live, and in closed beta with 3–5 agency testers. Built solo — product, design, frontend, backend, data pipeline, AI integration — from zero to production in a single sprint.
+        </p>
+        <div class="pResults rv-scale">
+          <div class="pResult">
+            <div class="pResult-val" data-target="25" data-suffix="">25</div>
+            <div class="pResult-label" data-i18n="result.0">Pages built across the full application</div>
+          </div>
+          <div class="pResult">
+            <div class="pResult-val" data-target="195" data-suffix="+">195+</div>
+            <div class="pResult-label" data-i18n="result.1">Data fields enriched per podcast in the database</div>
+          </div>
+          <div class="pResult">
+            <div class="pResult-val" data-target="10" data-suffix="K">10K</div>
+            <div class="pResult-label" data-i18n="result.2">Podcasts scored and ready for AI matching</div>
+          </div>
+          <div class="pResult">
+            <div class="pResult-val" data-target="1" data-suffix="">1</div>
+            <div class="pResult-label" data-i18n="result.3">Developer — product, design, code, data pipeline, AI</div>
+          </div>
+        </div>
+        <dl class="pSpecs rv">
+          <div class="pSpec"><dt>My role</dt><dd>Solo founder — product design, full-stack engineering, data pipeline, AI</dd></div>
+          <div class="pSpec"><dt>Status</dt><dd>Live — closed beta, summer 2025</dd></div>
+          <div class="pSpec"><dt>App URL</dt><dd>app.badassery-hq.com</dd></div>
+          <div class="pSpec"><dt>Stack</dt><dd>React 19 · TypeScript · Firebase · Gemini 2.0 Flash · Node.js · Python</dd></div>
+        </dl>
+        <div style="display:flex;gap:var(--s-4);flex-wrap:wrap" class="rv">
+          <a href="https://app.badassery-hq.com" target="_blank" rel="noopener noreferrer" class="pLiveLink">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
+            <span data-i18n="cta.live">Open live app</span>
+          </a>
+          <a href="https://github.com/tomhyg/badassery-pr" target="_blank" rel="noopener noreferrer" class="pGithub">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+            </svg>
+            <span data-i18n="cta.github">View on GitHub</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- NEXT PROJECT -->
+  <div class="pNext">
+    <div class="pNext-inner">
+      <div>
+        <div class="pNext-label" data-i18n="next.label">Next project</div>
+      </div>
+      <a href="pulsar.html" class="pNext-link">
+        PULSAR
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h14M13 5l7 7-7 7"/>
+        </svg>
+      </a>
+    </div>
+  </div>
+
+  <footer>
+    <div class="pFooter">
+      <span>© 2025 Tom Huyghe · Paris</span>
+      <a href="../index.html" style="color:var(--fg-3);text-decoration:none;font-family:var(--font-mono);font-size:11px">← Portfolio</a>
+    </div>
+  </footer>
+
+  <script>
+    /* ── Nav scroll ── */
+    const nav = document.getElementById("pNav");
+    window.addEventListener("scroll", () => {
+      nav.classList.toggle("scrolled", window.scrollY > 24);
+    }, { passive: true });
+
+    /* ── Reading progress ── */
+    const progress = document.getElementById("pProgress");
+    window.addEventListener("scroll", () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      progress.style.width = (docHeight > 0 ? (scrollTop / docHeight) * 100 : 0) + "%";
+    }, { passive: true });
+
+    /* ── Mouse glow ── */
+    const glow = document.getElementById("pMouseGlow");
+    let glowVisible = false;
+    document.addEventListener("mousemove", e => {
+      glow.style.left = e.clientX + "px";
+      glow.style.top  = e.clientY + "px";
+      if (!glowVisible) { glow.style.opacity = "1"; glowVisible = true; }
+    });
+    document.addEventListener("mouseleave", () => { glow.style.opacity = "0"; glowVisible = false; });
+
+    /* ── Hero entrance ── */
+    ["rv0","rv1","rv2","rv3","rv4"].forEach((id, i) => {
+      const el = document.getElementById(id);
+      if (el) setTimeout(() => el.classList.add("on"), 180 + i * 130);
+    });
+    setTimeout(() => { const el = document.getElementById("rv5"); if (el) el.classList.add("on"); }, 500);
+
+    /* ── Count-up ── */
+    function countUp(el) {
+      const target   = parseFloat(el.dataset.target);
+      const suffix   = el.dataset.suffix || "";
+      const decimal  = parseInt(el.dataset.decimal || "0");
+      if (target === 0) { el.textContent = "0" + suffix; return; }
+      const duration = 1100;
+      const startTime = performance.now();
+      function tick(now) {
+        const elapsed  = now - startTime;
+        const p        = Math.min(elapsed / duration, 1);
+        const eased    = 1 - Math.pow(1 - p, 3);
+        const value    = target * eased;
+        el.textContent = (decimal > 0 ? value.toFixed(decimal) : Math.round(value)) + suffix;
+        if (p < 1) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    }
+
+    /* ── Stats entrance ── */
+    const statEls = [0,1,2,3,4].map(i => document.getElementById("st" + i));
+    const statsObs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          statEls.forEach((el, i) => {
+            if (!el) return;
+            setTimeout(() => {
+              el.classList.add("on");
+              const val = el.querySelector("[data-target]");
+              if (val) countUp(val);
+            }, i * 90);
+          });
+          statsObs.disconnect();
+        }
+      });
+    }, { threshold: 0.3 });
+    if (statEls[0]) statsObs.observe(statEls[0].parentElement);
+
+    /* ── Count-up for result cards ── */
+    const resultObs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.querySelectorAll("[data-target]").forEach((el, i) => {
+            setTimeout(() => countUp(el), i * 120);
+          });
+          resultObs.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.2 });
+    document.querySelectorAll(".pResults").forEach(el => resultObs.observe(el));
+
+    /* ── Scroll reveal ── */
+    const revealObs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) { e.target.classList.add("on"); revealObs.unobserve(e.target); }
+      });
+    }, { threshold: 0.10 });
+    document.querySelectorAll(".rv, .rv-left, .rv-right, .rv-scale").forEach(el => {
+      if (!el.id || !el.id.startsWith("rv")) revealObs.observe(el);
+    });
+
+    /* ── Logo parallax ── */
+    const logo = document.getElementById("pHeroLogo");
+    window.addEventListener("scroll", () => {
+      if (logo) logo.style.transform = `translateY(${window.scrollY * -0.06}px)`;
+    }, { passive: true });
+
+    /* ── i18n ── */
+    const COPY = {
+      en: {
+        'hero.eyebrow': 'FULLSTACK · 2026 · SAAS',
+        'hero.sub': 'AI-powered podcast booking platform. Brooklynn finds, scores, and books the right podcasts for your clients — so PR agencies close more placements, faster.',
+        'hero.beta': 'Live beta · app.badassery-hq.com',
+        'hero.scroll': 'Scroll to explore',
+        'stat.0': 'Podcasts scored',
+        'stat.1': 'Data points / podcast',
+        'stat.2': 'App pages',
+        'stat.3': 'Spreadsheets needed',
+        'stat.4': 'Gemini Flash',
+        'ctx.label': 'Context',
+        'ctx.title': 'PR agencies book podcasts with spreadsheets and guesswork.',
+        'ctx.body1': 'Finding the right podcasts for a speaker client takes hours of manual research — cross-referencing audience data, checking if hosts accept guests, identifying contact emails. Most agencies rely on personal relationships and static lists that go stale immediately.',
+        'ctx.body2': 'Brooklyn Intelligence is a full-stack SaaS built for podcast booking agencies. It replaces the spreadsheet with an AI-powered database of <strong style="color:var(--fg-1)">10K+ scored shows</strong>, a Kanban outreach pipeline, Gmail integration, and a white-label client portal — all built solo, from zero to live beta.',
+        'prod.label': 'Product',
+        'prod.title': 'Six features. One workflow.',
+        'prod.text': 'Every feature was designed around the actual daily workflow of a podcast booking agent — from discovery and scoring, to outreach and client reporting.',
+        'feat.0.name': 'AI Podcast Matching',
+        'feat.0.desc': "Gemini 2.0 Flash analyzes a client's profile and surfaces the most relevant podcasts from the database, ranked by fit.",
+        'feat.1.name': 'Badassery Score',
+        'feat.1.desc': 'Every podcast gets a 0–100 score based on audience, engagement, niche alignment, and guest-friendliness. No more guessing.',
+        'feat.2.name': 'Outreach Kanban',
+        'feat.2.desc': 'Full pipeline per client: Pending → Contacted → Interested → Booked → Completed. Drag-and-drop with @dnd-kit.',
+        'feat.3.name': 'Gmail Integration',
+        'feat.3.desc': 'Send personalized pitches and track replies directly inside the app via Gmail SMTP + Cloud Functions.',
+        'feat.4.name': 'Client Portal',
+        'feat.4.desc': 'Branded portal where clients view their placements, approve podcast suggestions, and track booking progress.',
+        'feat.5.name': 'Podcast Database',
+        'feat.5.desc': '5–10K shows enriched with 195+ fields: download stats, social accounts, host contacts, past episodes, Apple & Spotify charts.',
+        'pipe.0': 'Pending',
+        'pipe.1': 'Contacted',
+        'pipe.2': 'Interested',
+        'pipe.3': 'Booked',
+        'pipe.4': 'Completed',
+        'arch.label': 'Architecture',
+        'arch.title': 'React + Firebase + Gemini. Built to scale.',
+        'arch.text': 'Serverless architecture built for a small team. Firebase handles auth, real-time database, and hosting. Cloud Functions manage Gmail SMTP and background tasks. Gemini 2.0 Flash powers the AI matching pipeline — fast inference, low cost.',
+        'data.label': 'Data pipeline',
+        'data.title': '10K podcasts. Scored weekly. Automatically.',
+        'data.text': 'The core value of the platform is the database quality. A multi-stage enrichment pipeline collects and refreshes data from RSS feeds, Apple Podcasts, Spotify Charts, YouTube, and social networks — then runs parallel AI scoring with Gemini to compute the Badassery Score for every show.',
+        'data.sample': 'Sample output',
+        'walk.label': 'In action', 'walk.title': 'Four screens. One workflow.',
+        'walk.0.name': 'AI Matching', 'walk.0.desc': 'Gemini 2.0 Flash runs against the full 65,797-show database and computes a match score for each podcast against the client\'s profile. Cached 24h.',
+        'walk.1.name': 'Discovery', 'walk.1.desc': '195 data points per show. Filter by category, audience, score, country. Every podcast scored and ranked in real time.',
+        'walk.2.name': 'Client Matching', 'walk.2.desc': 'Each client has their own AI profile. Brooklynn matches the 65K shows to their criteria — 1,282 matches for Sarah Mitchell, sorted by fit.',
+        'walk.3.name': 'Outreach Pipeline', 'walk.3.desc': 'Kanban per client. Pipeline → AI-generated pitch → In Contact → Replied → Booked. Direct Gmail integration inside the app.',
+        'status.label': 'Status',
+        'status.title': 'Live beta. Solo-built. End-to-end.',
+        'status.text': 'Brooklyn Intelligence is deployed, live, and in closed beta with 3–5 agency testers. Built solo — product, design, frontend, backend, data pipeline, AI integration — from zero to production in a single sprint.',
+        'result.0': 'Pages built across the full application',
+        'result.1': 'Data fields enriched per podcast in the database',
+        'result.2': 'Podcasts scored and ready for AI matching',
+        'result.3': 'Developer — product, design, code, data pipeline, AI',
+        'cta.live': 'Open live app',
+        'cta.github': 'View on GitHub',
+        'next.label': 'Next project',
+        'nav.work': 'Work', 'nav.skills': 'Skills', 'nav.about': 'About', 'nav.contact': 'Contact'
+      },
+      fr: {
+        'hero.eyebrow': 'FULLSTACK · 2026 · SAAS',
+        'hero.sub': 'Plateforme IA de booking podcast. Brooklynn trouve, score et réserve les bons podcasts pour vos clients — pour que les agences PR closent plus de placements, plus vite.',
+        'hero.beta': 'Beta live · app.badassery-hq.com',
+        'hero.scroll': 'Défiler pour explorer',
+        'stat.0': 'Podcasts scorés',
+        'stat.1': 'Points de données / podcast',
+        'stat.2': "Pages de l'app",
+        'stat.3': 'Tableurs nécessaires',
+        'stat.4': 'Gemini Flash',
+        'ctx.label': 'Contexte',
+        'ctx.title': "Les agences PR bookent les podcasts à coups de tableurs et d'intuition.",
+        'ctx.body1': "Trouver les bons podcasts pour un client prend des heures de recherche manuelle — croiser les données d'audience, vérifier si les hosts acceptent des invités, identifier les emails de contact. La plupart des agences s'appuient sur des relations personnelles et des listes statiques qui deviennent rapidement obsolètes.",
+        'ctx.body2': 'Brooklyn Intelligence est un SaaS fullstack conçu pour les agences de booking podcast. Il remplace le tableur par une base de données IA de <strong style="color:var(--fg-1)">10K+ shows scorés</strong>, un pipeline Kanban de prospection, une intégration Gmail et un portail client en marque blanche — construit seul, de zéro à la beta live.',
+        'prod.label': 'Produit',
+        'prod.title': 'Six fonctionnalités. Un seul workflow.',
+        'prod.text': "Chaque fonctionnalité a été conçue autour du workflow quotidien réel d'un agent de booking podcast — de la découverte et du scoring à la prospection et au reporting client.",
+        'feat.0.name': 'Matching IA de podcasts',
+        'feat.0.desc': "Gemini 2.0 Flash analyse le profil d'un client et remonte les podcasts les plus pertinents de la base, classés par adéquation.",
+        'feat.1.name': 'Badassery Score',
+        'feat.1.desc': "Chaque podcast reçoit un score de 0 à 100 basé sur l'audience, l'engagement, l'alignement de niche et l'ouverture aux invités. Fini les devinettes.",
+        'feat.2.name': 'Kanban de prospection',
+        'feat.2.desc': 'Pipeline complet par client : En attente → Contacté → Intéressé → Réservé → Terminé. Drag-and-drop avec @dnd-kit.',
+        'feat.3.name': 'Intégration Gmail',
+        'feat.3.desc': "Envoyez des pitches personnalisés et suivez les réponses directement dans l'app via Gmail SMTP + Cloud Functions.",
+        'feat.4.name': 'Portail client',
+        'feat.4.desc': 'Portail en marque blanche où les clients voient leurs placements, approuvent les suggestions de podcasts et suivent l\'avancement des bookings.',
+        'feat.5.name': 'Base de podcasts',
+        'feat.5.desc': '5–10K shows enrichis avec 195+ champs : stats de téléchargement, comptes sociaux, contacts des hosts, épisodes passés, classements Apple & Spotify.',
+        'pipe.0': 'En attente',
+        'pipe.1': 'Contacté',
+        'pipe.2': 'Intéressé',
+        'pipe.3': 'Réservé',
+        'pipe.4': 'Terminé',
+        'arch.label': 'Architecture',
+        'arch.title': 'React + Firebase + Gemini. Conçu pour scaler.',
+        'arch.text': "Architecture serverless pour une petite équipe. Firebase gère l'auth, la base de données temps réel et l'hébergement. Les Cloud Functions pilotent le SMTP Gmail et les tâches de fond. Gemini 2.0 Flash alimente le pipeline de matching IA — inférence rapide, coût faible.",
+        'data.label': 'Pipeline de données',
+        'data.title': '10K podcasts. Scorés chaque semaine. Automatiquement.',
+        'data.text': 'La valeur centrale de la plateforme tient à la qualité de la base. Un pipeline d\'enrichissement multi-étapes collecte et actualise les données depuis les flux RSS, Apple Podcasts, Spotify Charts, YouTube et les réseaux sociaux — puis lance un scoring IA parallèle avec Gemini pour calculer le Badassery Score de chaque show.',
+        'data.sample': 'Exemple de sortie',
+        'walk.label': 'En action', 'walk.title': 'Quatre écrans. Un workflow.',
+        'walk.0.name': 'Matching IA', 'walk.0.desc': 'Gemini 2.0 Flash parcourt les 65 797 shows de la base et calcule un score de matching entre chaque podcast et le profil du client. Mis en cache 24h.',
+        'walk.1.name': 'Discovery', 'walk.1.desc': '195 data points par show. Filtres par catégorie, audience, score, pays. Chaque podcast scoré et classé en temps réel.',
+        'walk.2.name': 'Client Matching', 'walk.2.desc': 'Chaque client a son propre profil IA. Brooklynn fait correspondre les 65K shows à ses critères — 1 282 matches pour Sarah Mitchell, triés par pertinence.',
+        'walk.3.name': 'Outreach Pipeline', 'walk.3.desc': 'Kanban par client. Pipeline → Pitch IA généré → In Contact → Replied → Booked. Intégration Gmail directe depuis l\'app.',
+        'status.label': 'Statut',
+        'status.title': 'Beta live. Construit seul. De A à Z.',
+        'status.text': 'Brooklyn Intelligence est déployé, en ligne et en beta fermée avec 3 à 5 agences testeuses. Construit seul — produit, design, frontend, backend, pipeline de données, intégration IA — de zéro à la production en un seul sprint.',
+        'result.0': "Pages construites sur l'application complète",
+        'result.1': 'Champs de données enrichis par podcast dans la base',
+        'result.2': 'Podcasts scorés et prêts pour le matching IA',
+        'result.3': 'Développeur — produit, design, code, pipeline de données, IA',
+        'cta.live': "Ouvrir l'app",
+        'cta.github': 'Voir sur GitHub',
+        'next.label': 'Projet suivant',
+        'nav.work': 'Projets', 'nav.skills': 'Compétences', 'nav.about': 'À propos', 'nav.contact': 'Contact'
+      }
+    };
+
+    function setLang(l) {
+      localStorage.setItem('th-lang', l);
+      document.documentElement.lang = l;
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const t = COPY[l][el.dataset.i18n];
+        if (t !== undefined) el.innerHTML = t;
+      });
+      document.querySelectorAll('.pLangBtn').forEach(b => b.classList.toggle('is-active', b.dataset.lang === l));
+    }
+    /* ── Mobile burger ── */
+    const burger = document.getElementById("pBurger");
+    const mobileMenu = document.getElementById("pMobileMenu");
+    if (burger && mobileMenu) {
+      burger.addEventListener("click", () => {
+        burger.classList.toggle("is-open");
+        mobileMenu.classList.toggle("is-open");
+      });
+    }
+    function closeMobileMenu() {
+      if (burger) burger.classList.remove("is-open");
+      if (mobileMenu) mobileMenu.classList.remove("is-open");
+    }
+    (function(){ const l = localStorage.getItem('th-lang') || 'en'; setLang(l); })();
+  </script>
+</body>
+</html>

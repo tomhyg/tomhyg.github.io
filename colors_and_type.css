@@ -1,0 +1,225 @@
+/* =========================================================================
+   Tom Huyghe — Design Tokens
+   Dark-first portfolio system. Violet electric accent.
+   ========================================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&family=Geist:wght@400;500;600;700&display=swap');
+
+:root {
+  /* ---------- Color · Surface ---------- */
+  --bg-0: #07070B;          /* page */
+  --bg-1: #0E0E14;          /* card */
+  --bg-2: #16161F;          /* input / inset */
+  --bg-3: #1E1E29;          /* hover lift */
+
+  --border: #25252F;        /* hairline */
+  --border-strong: #383844; /* active hairline */
+
+  /* ---------- Color · Text ---------- */
+  --fg-1: #F4F4F8;          /* primary */
+  --fg-2: #B4B4C0;          /* body */
+  --fg-3: #6E6E7A;          /* tertiary, mono labels */
+  --fg-4: #42424E;          /* decorative, disabled */
+
+  /* ---------- Color · Accent ---------- */
+  --accent:       #7C5CFF;  /* violet electric — focus + one moment per view */
+  --accent-soft:  #B794FF;  /* hover-glow, gradient stop */
+  --accent-deep:  #5538DB;  /* pressed */
+
+  /* ---------- Color · Semantic ---------- */
+  --success: #3FD18D;       /* clinical-validated, shipped */
+  --warn:    #FFB454;       /* in progress, draft */
+  --danger:  #FF5C5C;       /* destructive (rare in this portfolio) */
+
+  /* ---------- Color · Imagery (not UI) ---------- */
+  --img-coral:  #FF8E6B;    /* portrait gradient */
+  --img-cyan:   #6FC9D6;    /* texture average */
+  --img-teal:   #5BBFA7;
+  --img-violet: #9AA9F0;
+  --img-amber:  #F2A65A;
+
+  /* ---------- Type ---------- */
+  --font-sans: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Display */
+  --t-display-size: 80px;
+  --t-display-line: 88px;
+  --t-display-sm-size: 56px;
+  --t-display-sm-line: 60px;
+  --t-display-weight: 600;
+  --t-display-track: -0.02em;
+
+  /* Headings */
+  --t-h1-size: 40px;        --t-h1-line: 48px;
+  --t-h2-size: 28px;        --t-h2-line: 36px;
+  --t-h3-size: 20px;        --t-h3-line: 28px;
+  --t-h-track: -0.015em;
+
+  /* Body */
+  --t-body-size: 16px;      --t-body-line: 26px;
+  --t-body-sm-size: 14px;   --t-body-sm-line: 22px;
+  --t-caption-size: 13px;   --t-caption-line: 20px;
+
+  /* Mono */
+  --t-mono-eyebrow-size: 12px; --t-mono-eyebrow-line: 16px;
+  --t-mono-eyebrow-track: 0.08em;
+  --t-mono-sm-size: 12px;     --t-mono-sm-line: 18px;
+
+  /* ---------- Spacing (8-pt + half) ---------- */
+  --s-1: 4px;   --s-2: 8px;   --s-3: 12px;  --s-4: 16px;
+  --s-5: 24px;  --s-6: 32px;  --s-7: 48px;  --s-8: 64px;
+  --s-9: 96px;  --s-10: 128px;
+
+  /* ---------- Radii ---------- */
+  --r-1: 4px;   /* inputs, chips */
+  --r-2: 8px;   /* buttons, small cards */
+  --r-3: 12px;  /* project cards */
+  --r-4: 20px;  /* portrait, hero canvas crop */
+  --r-pill: 999px;
+
+  /* ---------- Shadow / Elevation ---------- */
+  --shadow-1: 0 4px 16px rgba(0,0,0,0.4), 0 1px 0 rgba(255,255,255,0.04) inset;
+  --shadow-2: 0 12px 40px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.04) inset;
+  --shadow-glow: 0 0 0 1px var(--accent), 0 0 24px rgba(124,92,255,0.3);
+
+  /* ---------- Motion ---------- */
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --motion-fast: 120ms;
+  --motion:      220ms;
+  --motion-slow: 480ms;
+
+  /* ---------- Layout ---------- */
+  --max-width: 1240px;
+  --gutter: var(--s-7);
+}
+
+/* =========================================================================
+   Semantic element styles
+   ========================================================================= */
+
+html, body {
+  background: var(--bg-0);
+  color: var(--fg-2);
+  font-family: var(--font-sans);
+  font-size: var(--t-body-size);
+  line-height: var(--t-body-line);
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Global noise overlay — pinned, fixed, 1.5% opacity */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1000;
+  opacity: 0.015;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+h1, .t-h1 {
+  font-family: var(--font-sans);
+  font-size: var(--t-h1-size);
+  line-height: var(--t-h1-line);
+  font-weight: 600;
+  letter-spacing: var(--t-h-track);
+  color: var(--fg-1);
+  margin: 0;
+}
+h2, .t-h2 {
+  font-family: var(--font-sans);
+  font-size: var(--t-h2-size);
+  line-height: var(--t-h2-line);
+  font-weight: 600;
+  letter-spacing: var(--t-h-track);
+  color: var(--fg-1);
+  margin: 0;
+}
+h3, .t-h3 {
+  font-family: var(--font-sans);
+  font-size: var(--t-h3-size);
+  line-height: var(--t-h3-line);
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  color: var(--fg-1);
+  margin: 0;
+}
+
+.t-display {
+  font-family: var(--font-sans);
+  font-size: var(--t-display-size);
+  line-height: var(--t-display-line);
+  font-weight: var(--t-display-weight);
+  letter-spacing: var(--t-display-track);
+  color: var(--fg-1);
+}
+.t-display-sm {
+  font-family: var(--font-sans);
+  font-size: var(--t-display-sm-size);
+  line-height: var(--t-display-sm-line);
+  font-weight: var(--t-display-weight);
+  letter-spacing: var(--t-display-track);
+  color: var(--fg-1);
+}
+
+p, .t-body {
+  font-family: var(--font-sans);
+  font-size: var(--t-body-size);
+  line-height: var(--t-body-line);
+  color: var(--fg-2);
+  margin: 0;
+  text-wrap: pretty;
+}
+.t-body-sm {
+  font-size: var(--t-body-sm-size);
+  line-height: var(--t-body-sm-line);
+  color: var(--fg-2);
+}
+.t-caption {
+  font-size: var(--t-caption-size);
+  line-height: var(--t-caption-line);
+  color: var(--fg-3);
+  font-weight: 500;
+}
+
+code, .t-mono, .t-mono-sm {
+  font-family: var(--font-mono);
+  font-size: var(--t-mono-sm-size);
+  line-height: var(--t-mono-sm-line);
+  color: var(--fg-2);
+}
+
+.t-eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--t-mono-eyebrow-size);
+  line-height: var(--t-mono-eyebrow-line);
+  font-weight: 500;
+  letter-spacing: var(--t-mono-eyebrow-track);
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+
+a {
+  color: var(--fg-1);
+  text-decoration: none;
+  transition: color var(--motion-fast) var(--ease);
+}
+a:hover { color: var(--accent-soft); }
+
+::selection { background: var(--accent); color: var(--bg-0); }
+
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0ms !important;
+    transition-duration: 0ms !important;
+  }
+}

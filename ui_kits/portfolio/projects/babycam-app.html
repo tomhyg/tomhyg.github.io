@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BABYCAM APP — Tom Huyghe</title>
+  <link rel="icon" type="image/png" href="../../../assets/favicon.png" media="(prefers-color-scheme: dark)" />
+  <link rel="icon" type="image/png" href="../../../assets/favicon-light.png" media="(prefers-color-scheme: light)" />
+  <meta name="description" content="Flutter companion app for BABYCAM — real-time WiFi video streaming, environmental monitoring, AI alerts, AWS backend. iOS & Android." />
+  <link rel="stylesheet" href="../../../colors_and_type.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    html, body { margin: 0; padding: 0; }
+    body { background: var(--bg-0); overflow-x: hidden; }
+    img { display: block; max-width: 100%; }
+
+    :root {
+      --lav:       #9E96CC;
+      --lav-soft:  #B8B2D8;
+      --lav-glow:  rgba(158,150,204,0.25);
+      --lav-pale:  rgba(158,150,204,0.08);
+      --teal:      #72CDB5;
+      --teal-pale: rgba(114,205,181,0.08);
+    }
+
+    .pProgress {
+      position: fixed; top: 0; left: 0; z-index: 200;
+      height: 2px; width: 0%;
+      background: linear-gradient(90deg, var(--lav), var(--teal));
+      transition: width 80ms linear; pointer-events: none;
+    }
+    .pMouseGlow {
+      position: fixed; pointer-events: none; z-index: 4;
+      width: 700px; height: 700px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(158,150,204,0.07) 0%, transparent 65%);
+      transform: translate(-50%, -50%);
+      opacity: 0; transition: opacity 0.4s;
+    }
+    .rv { opacity: 0; transform: translateY(22px); transition: opacity 0.7s var(--ease), transform 0.7s var(--ease); }
+    .rv.on { opacity: 1; transform: translateY(0); }
+    .rv-left { opacity: 0; transform: translateX(-28px); transition: opacity 0.7s var(--ease), transform 0.7s var(--ease); }
+    .rv-left.on { opacity: 1; transform: translateX(0); }
+    .rv-right { opacity: 0; transform: translateX(28px); transition: opacity 0.75s var(--ease), transform 0.75s var(--ease); }
+    .rv-right.on { opacity: 1; transform: translateX(0); }
+    .rv-scale { opacity: 0; transform: scale(0.94); transition: opacity 0.6s var(--ease), transform 0.6s var(--ease); }
+    .rv-scale.on { opacity: 1; transform: scale(1); }
+    @media (prefers-reduced-motion: reduce) { .rv,.rv-left,.rv-right,.rv-scale { opacity:1; transform:none; transition:none; } }
+
+    /* ── Nav ── */
+    .pNav { position: sticky; top: 0; z-index: 50; border-bottom: 1px solid transparent; transition: background var(--motion) var(--ease), border-color var(--motion) var(--ease); }
+    .pNav.scrolled { background: rgba(7,7,11,0.85); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-bottom-color: var(--border); }
+    .pNav-inner { max-width: var(--max-width); margin: 0 auto; padding: 0 var(--gutter); height: 60px; display: flex; align-items: center; gap: var(--s-6); }
+    .pNav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--fg-1); font-size: 13px; font-weight: 600; letter-spacing: -0.01em; }
+    .pNav-brand-logo { width: 22px; height: 22px; border-radius: 4px; }
+    .pNav-links { display: flex; align-items: center; gap: var(--s-5); margin-left: auto; }
+    .pNav-links a { font-size: 13px; color: var(--fg-3); text-decoration: none; transition: color var(--motion-fast) var(--ease); }
+    .pNav-links a:hover { color: var(--fg-1); }
+    .pNav-back { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.04em; color: var(--fg-3); text-decoration: none; display: flex; align-items: center; gap: 6px; transition: color 0.2s; }
+    .pNav-back:hover { color: var(--lav); }
+
+    /* ── Hero ── */
+    .pHero { position: relative; overflow: hidden; min-height: 88vh; }
+    .pHero-bg { position: absolute; inset: 0; z-index: 0; }
+    .pHero-texture { position: absolute; inset: 0; background: url("../../../assets/texture-violet.jpg") center/cover; mix-blend-mode: screen; opacity: 0.10; }
+    .pHero-veil { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(7,7,11,0.15) 0%, rgba(7,7,11,0.5) 60%, var(--bg-0) 100%); }
+    .pHero-ambient { position: absolute; right: 8%; top: 50%; transform: translateY(-50%); width: 500px; height: 500px; border-radius: 50%; background: radial-gradient(circle, var(--lav-glow) 0%, transparent 65%); pointer-events: none; }
+    .pHero-inner { position: relative; z-index: 2; max-width: var(--max-width); margin: 0 auto; padding: 0 var(--gutter); display: grid; grid-template-columns: 1fr auto; align-items: center; gap: var(--s-8); }
+    .pHero-left { display: flex; flex-direction: column; gap: var(--s-5); padding: var(--s-10) 0 var(--s-8); }
+    .pHero-right { display: flex; align-items: center; justify-content: center; padding: var(--s-8) 0; }
+    .pHero-eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-3); display: flex; align-items: center; gap: 10px; }
+    .pHero-eyebrow::before { content: ""; width: 20px; height: 1px; background: var(--lav); flex-shrink: 0; }
+    .pHero-title { font-size: clamp(56px, 8vw, 108px); line-height: 0.92; font-weight: 700; letter-spacing: -0.04em; color: var(--fg-1); margin: 0; }
+    .pHero-title span { color: var(--lav); }
+    .pHero-sub { font-size: 17px; line-height: 26px; color: var(--fg-2); max-width: 520px; }
+    .pHero-badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border: 1px solid var(--lav); border-radius: 20px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--lav); width: fit-content; }
+    .pHero-phone { width: 220px; filter: drop-shadow(0 24px 60px rgba(0,0,0,0.6)) drop-shadow(0 0 60px var(--lav-glow)); animation: float 7s ease-in-out infinite; }
+    @keyframes float { 0%,100%{transform:translateY(0) rotate(-1deg)} 50%{transform:translateY(-14px) rotate(1deg)} }
+
+    /* ── Stats bar ── */
+    .pStats { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); background: rgba(15,15,20,0.6); backdrop-filter: blur(10px); }
+    .pStats-inner { max-width: var(--max-width); margin: 0 auto; padding: 0 var(--gutter); display: flex; }
+    .pStat { flex: 1; padding: var(--s-5) var(--s-4); border-right: 1px solid var(--border); opacity: 0; transform: translateY(10px); transition: opacity 0.5s var(--ease), transform 0.5s var(--ease); }
+    .pStat:last-child { border-right: 0; }
+    .pStat.on { opacity: 1; transform: translateY(0); }
+    .pStat-val { font-size: 26px; font-weight: 600; letter-spacing: -0.025em; line-height: 1; margin-bottom: 5px; color: var(--lav); }
+    .pStat-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg-3); }
+
+    /* ── Sections ── */
+    .pSection { border-top: 1px solid var(--border); }
+    .pSection-inner { max-width: var(--max-width); margin: 0 auto; padding: var(--s-9) var(--gutter); display: grid; grid-template-columns: 220px 1fr; gap: var(--s-9); align-items: start; }
+    .pSection-label { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-3); position: sticky; top: 80px; display: flex; align-items: center; gap: 10px; }
+    .pSection-label::before { content: ""; width: 16px; height: 1px; background: var(--lav); flex-shrink: 0; }
+    .pSection-body { display: flex; flex-direction: column; gap: var(--s-6); }
+    .pSection-title { font-size: 38px; line-height: 44px; font-weight: 600; letter-spacing: -0.025em; color: var(--fg-1); margin: 0; }
+    .pSection-text { font-size: 15px; line-height: 24px; color: var(--fg-2); margin: 0; }
+
+    /* ── Specs ── */
+    .pSpecs { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--border); border-radius: var(--r-2); overflow: hidden; }
+    .pSpec { display: grid; grid-template-columns: 180px 1fr; gap: var(--s-4); padding: var(--s-3) var(--s-4); border-bottom: 1px solid var(--border); }
+    .pSpec:last-child { border-bottom: none; }
+    .pSpec dt { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.04em; color: var(--fg-3); }
+    .pSpec dd { font-size: 13px; color: var(--fg-2); }
+
+    /* ── Features ── */
+    .pFeatures { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4); }
+    .pFeature { background: var(--bg-1); border: 1px solid var(--border); border-radius: var(--r-3); padding: var(--s-5); display: flex; flex-direction: column; gap: var(--s-2); transition: border-color var(--motion) var(--ease); }
+    .pFeature:hover { border-color: var(--border-strong); }
+    .pFeature-name { font-size: 14px; font-weight: 600; color: var(--fg-1); }
+    .pFeature-desc { font-size: 13px; line-height: 20px; color: var(--fg-2); }
+
+    /* ── Chips ── */
+    .pChips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .pChip { font-family: var(--font-mono); font-size: 11px; padding: 5px 11px; border: 1px solid var(--border); border-radius: var(--r-1); color: var(--fg-3); transition: border-color 0.2s, color 0.2s; }
+    .pChip:hover { border-color: var(--lav); color: var(--lav); }
+
+    /* ── Phone mockup ── */
+    .pPhone { max-width: 300px; margin: 0 auto; border-radius: 40px; overflow: hidden; border: 1px solid var(--border); box-shadow: 0 24px 64px rgba(0,0,0,0.55), 0 0 50px var(--lav-glow); }
+    .pPhone img { width: 100%; display: block; }
+
+    /* ── Results ── */
+    .pResults { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--s-4); }
+    .pResult { background: var(--bg-1); border: 1px solid var(--border); border-radius: var(--r-2); padding: var(--s-5); }
+    .pResult-val { font-size: 36px; font-weight: 700; letter-spacing: -0.04em; color: var(--lav); line-height: 1; margin-bottom: var(--s-2); }
+    .pResult-label { font-size: 13px; line-height: 20px; color: var(--fg-2); }
+
+    /* ── Github link ── */
+    .pGithub { display: inline-flex; align-items: center; gap: 10px; padding: 10px 18px; border: 1px solid var(--border); border-radius: var(--r-2); color: var(--fg-2); text-decoration: none; font-size: 13px; transition: all 0.2s; }
+    .pGithub:hover { border-color: var(--lav); color: var(--lav); }
+
+    /* ── Next ── */
+    .pNext { border-top: 1px solid var(--border); }
+    .pNext-inner { max-width: var(--max-width); margin: 0 auto; padding: var(--s-8) var(--gutter); display: flex; align-items: center; justify-content: space-between; }
+    .pNext-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-3); margin-bottom: 6px; }
+    .pNext-link { display: flex; align-items: center; gap: 12px; font-size: 28px; font-weight: 700; letter-spacing: -0.03em; color: var(--fg-1); text-decoration: none; transition: color 0.2s; }
+    .pNext-link:hover { color: var(--lav); }
+
+    /* ── Footer ── */
+    .pFooter { max-width: var(--max-width); margin: 0 auto; padding: var(--s-5) var(--gutter); display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--border); font-family: var(--font-mono); font-size: 11px; color: var(--fg-3); }
+
+    @media (max-width: 960px) {
+      .pHero-inner { grid-template-columns: 1fr; }
+      .pHero-right { display: none; }
+      .pSection-inner { grid-template-columns: 1fr; gap: var(--s-6); }
+      .pSection-label { position: static; }
+      .pStats-inner { flex-wrap: wrap; }
+      .pStat { flex: 1 1 45%; }
+      .pFeatures { grid-template-columns: 1fr; }
+      .pResults { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="pProgress" id="pProgress"></div>
+  <div class="pMouseGlow" id="pMouseGlow"></div>
+
+  <!-- NAV -->
+  <nav class="pNav" id="pNav">
+    <div class="pNav-inner">
+      <a href="../index.html" class="pNav-brand">
+        <img src="../../../assets/logo.png" alt="" class="pNav-brand-logo" />
+        Tom Huyghe
+      </a>
+      <div class="pNav-links">
+        <a href="../index.html#work" data-i18n="nav.work">Work</a>
+        <a href="../index.html#skills" data-i18n="nav.skills">Skills</a>
+        <a href="../index.html#about" data-i18n="nav.about">About</a>
+        <a href="../index.html#contact" data-i18n="nav.contact">Contact</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="pHero">
+    <div class="pHero-bg">
+      <div class="pHero-texture"></div>
+      <div class="pHero-veil"></div>
+      <div class="pHero-ambient"></div>
+    </div>
+    <div class="pHero-inner">
+      <div class="pHero-left">
+        <div class="pHero-eyebrow rv" id="rv0" data-i18n="hero.eyebrow">MOBILE · 2025 · FLUTTER</div>
+        <h1 class="pHero-title rv" id="rv1">BABYCAM<br /><span>APP</span></h1>
+        <p class="pHero-sub rv" id="rv2" data-i18n="hero.sub">
+          Flutter companion app for the BABYCAM smart monitor. Real-time WiFi video streaming, environmental data, AI cry detection alerts, and AWS-backed storage — iOS & Android from one codebase.
+        </p>
+        <div class="pHero-badge rv" id="rv3" data-i18n="hero.badge">
+          <span style="width:6px;height:6px;border-radius:50%;background:var(--lav);flex-shrink:0"></span>
+          Prototype validated · Medivietech Paris
+        </div>
+      </div>
+      <div class="pHero-right rv-right" id="rv4">
+        <img src="../../../assets/babycam-app.png" alt="BABYCAM APP — Flutter mobile app" class="pHero-phone" id="pHeroLogo" />
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS BAR -->
+  <div class="pStats">
+    <div class="pStats-inner">
+      <div class="pStat" id="st0"><div class="pStat-val">&lt;200ms</div><div class="pStat-label" data-i18n="stat.0">Stream latency</div></div>
+      <div class="pStat" id="st1"><div class="pStat-val" data-target="1080">1080p</div><div class="pStat-label" data-i18n="stat.1">Live resolution</div></div>
+      <div class="pStat" id="st2"><div class="pStat-val" data-target="4">4</div><div class="pStat-label" data-i18n="stat.2">Env. sensors</div></div>
+      <div class="pStat" id="st3"><div class="pStat-val">2</div><div class="pStat-label" data-i18n="stat.3">Platforms — iOS & Android</div></div>
+      <div class="pStat" id="st4"><div class="pStat-val">1</div><div class="pStat-label" data-i18n="stat.4">Codebase</div></div>
+    </div>
+  </div>
+
+  <!-- CONTEXT -->
+  <section class="pSection">
+    <div class="pSection-inner">
+      <div class="pSection-label rv-left" data-i18n="ctx.label">Context</div>
+      <div class="pSection-body">
+        <h2 class="pSection-title rv" data-i18n="ctx.title">The firmware is only half the product.</h2>
+        <p class="pSection-text rv" data-i18n="ctx.body1">
+          An embedded system without a usable software layer is a prototype no one will adopt. The BABYCAM hardware streams H.264 video over WiFi — but parents need an app that receives it, surfaces alerts, and makes sense of the sensor data, all in real time.
+        </p>
+        <p class="pSection-text rv" data-i18n="ctx.body2">
+          Built as the companion to <strong style="color:var(--fg-1)">BABYCAM</strong>, this Flutter application handles stream decoding, AI alert delivery, environmental monitoring display, remote device control, and cloud sync — targeting both iOS and Android from a single Dart codebase.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="pSection">
+    <div class="pSection-inner">
+      <div class="pSection-label rv-left" data-i18n="feat.label">Features</div>
+      <div class="pSection-body">
+        <h2 class="pSection-title rv" data-i18n="feat.title">Six features. One screen.</h2>
+        <div class="pPhone rv-scale">
+          <img src="../../../assets/babycam-app.png" alt="BABYCAM APP — main screen" loading="lazy" />
+        </div>
+        <div class="pFeatures rv-scale">
+          <div class="pFeature">
+            <div class="pFeature-name" data-i18n="feat.0.name">Live stream</div>
+            <div class="pFeature-desc" data-i18n="feat.0.desc">1080p@30FPS H.264 stream decoded and rendered in real time — under 200ms end-to-end latency from sensor to screen.</div>
+          </div>
+          <div class="pFeature">
+            <div class="pFeature-name" data-i18n="feat.1.name">AI cry detection</div>
+            <div class="pFeature-desc" data-i18n="feat.1.desc">On-chip AI events pushed instantly to the app — cry, movement, silence. Push notifications via AWS SNS when the app is in background.</div>
+          </div>
+          <div class="pFeature">
+            <div class="pFeature-name" data-i18n="feat.2.name">Environmental monitoring</div>
+            <div class="pFeature-desc" data-i18n="feat.2.desc">Live temperature, humidity, air quality, and luminosity readings from the 4 embedded sensors, updated in real time alongside the video feed.</div>
+          </div>
+          <div class="pFeature">
+            <div class="pFeature-name" data-i18n="feat.3.name">Remote controls</div>
+            <div class="pFeature-desc" data-i18n="feat.3.desc">Remotely trigger the integrated nightlight and play lullabies through the Class D amplifier — without waking the baby.</div>
+          </div>
+          <div class="pFeature">
+            <div class="pFeature-name" data-i18n="feat.4.name">AWS cloud sync</div>
+            <div class="pFeature-desc" data-i18n="feat.4.desc">Environmental data and event logs synced to AWS for long-term storage, multi-device access, and parental reporting.</div>
+          </div>
+          <div class="pFeature">
+            <div class="pFeature-name" data-i18n="feat.5.name">History & stats</div>
+            <div class="pFeature-desc" data-i18n="feat.5.desc">Sleep pattern history, cry frequency charts, and room condition trends — giving parents actionable data over time.</div>
+          </div>
+        </div>
+        <div class="pChips rv">
+          <span class="pChip">Flutter</span>
+          <span class="pChip">Dart</span>
+          <span class="pChip">iOS</span>
+          <span class="pChip">Android</span>
+          <span class="pChip">H.264 decode</span>
+          <span class="pChip">WiFi streaming</span>
+          <span class="pChip">AWS</span>
+          <span class="pChip">Push notifications</span>
+          <span class="pChip">Real-time UI</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ARCHITECTURE -->
+  <section class="pSection">
+    <div class="pSection-inner">
+      <div class="pSection-label rv-left" data-i18n="arch.label">Architecture</div>
+      <div class="pSection-body">
+        <h2 class="pSection-title rv" data-i18n="arch.title">Flutter + WiFi + AWS. One codebase, two platforms.</h2>
+        <p class="pSection-text rv" data-i18n="arch.text">
+          The app communicates directly with the BABYCAM device over the local WiFi network for the video stream and control commands. Cloud features (storage, notifications, history) are handled via AWS — S3 for data, SNS for push alerts, and a lightweight Lambda backend.
+        </p>
+        <dl class="pSpecs rv">
+          <div class="pSpec"><dt>Framework</dt><dd>Flutter 3 — Dart — iOS & Android from one repo</dd></div>
+          <div class="pSpec"><dt>Video</dt><dd>H.264 stream over WiFi — hardware decode, &lt;200ms latency</dd></div>
+          <div class="pSpec"><dt>Device comms</dt><dd>Local WiFi — direct socket connection to BABYCAM ESP32-P4</dd></div>
+          <div class="pSpec"><dt>Cloud</dt><dd>AWS S3 (data storage) · AWS SNS (push notifications) · Lambda (backend logic)</dd></div>
+          <div class="pSpec"><dt>State</dt><dd>Riverpod — reactive state management for real-time sensor streams</dd></div>
+          <div class="pSpec"><dt>Platforms</dt><dd>iOS 15+ · Android 10+ — single codebase, native performance</dd></div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- VALIDATION -->
+  <section class="pSection">
+    <div class="pSection-inner">
+      <div class="pSection-label rv-left" data-i18n="val.label">Validation</div>
+      <div class="pSection-body">
+        <h2 class="pSection-title rv" data-i18n="val.title">Validated end-to-end with the BABYCAM prototype.</h2>
+        <p class="pSection-text rv" data-i18n="val.text">
+          The app was developed and validated in tandem with the BABYCAM embedded system over a 6-month internship at Medivietech (Paris). Both hardware and software were validated together as a production-ready, industrializable system.
+        </p>
+        <div class="pResults rv-scale">
+          <div class="pResult">
+            <div class="pResult-val">&lt;200ms</div>
+            <div class="pResult-label" data-i18n="result.0">End-to-end latency — sensor to Flutter screen</div>
+          </div>
+          <div class="pResult">
+            <div class="pResult-val" data-target="30">30FPS</div>
+            <div class="pResult-label" data-i18n="result.1">Live 1080p stream without frame drops</div>
+          </div>
+          <div class="pResult">
+            <div class="pResult-val" data-target="4">4</div>
+            <div class="pResult-label" data-i18n="result.2">Environmental sensors displayed live</div>
+          </div>
+          <div class="pResult">
+            <div class="pResult-val" data-target="1">1</div>
+            <div class="pResult-label" data-i18n="result.3">Codebase — iOS & Android from a single Flutter repo</div>
+          </div>
+        </div>
+        <dl class="pSpecs rv">
+          <div class="pSpec"><dt>My role</dt><dd>Sole mobile developer — Flutter app, AWS integration, end-to-end validation</dd></div>
+          <div class="pSpec"><dt>Company</dt><dd>Medivietech, Paris</dd></div>
+          <div class="pSpec"><dt>Duration</dt><dd>April – October 2025 (6 months)</dd></div>
+          <div class="pSpec"><dt>Status</dt><dd>Prototype validated — industrializable architecture</dd></div>
+        </dl>
+        <a href="https://github.com/tomhyg/BABYCAM" target="_blank" rel="noopener noreferrer" class="pGithub rv">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+          View source — github.com/tomhyg/BABYCAM
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- NEXT PROJECT -->
+  <div class="pNext">
+    <div class="pNext-inner">
+      <div><div class="pNext-label" data-i18n="next.label">Next project</div></div>
+      <a href="physio-viewer.html" class="pNext-link">
+        PHYSIO VIEWER
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+  </div>
+
+  <footer>
+    <div class="pFooter">
+      <span>© 2025 Tom Huyghe · Paris</span>
+      <a href="../index.html" style="color:var(--fg-3);text-decoration:none;font-family:var(--font-mono);font-size:11px">← Portfolio</a>
+    </div>
+  </footer>
+
+  <script>
+    const nav = document.getElementById("pNav");
+    window.addEventListener("scroll", () => { nav.classList.toggle("scrolled", window.scrollY > 24); }, { passive: true });
+    const progress = document.getElementById("pProgress");
+    window.addEventListener("scroll", () => {
+      const d = document.documentElement.scrollHeight - window.innerHeight;
+      progress.style.width = (d > 0 ? (window.scrollY / d) * 100 : 0) + "%";
+    }, { passive: true });
+    const glow = document.getElementById("pMouseGlow");
+    let gv = false;
+    document.addEventListener("mousemove", e => { glow.style.left = e.clientX + "px"; glow.style.top = e.clientY + "px"; if (!gv) { glow.style.opacity = "1"; gv = true; } });
+    document.addEventListener("mouseleave", () => { glow.style.opacity = "0"; gv = false; });
+    ["rv0","rv1","rv2","rv3","rv4"].forEach((id, i) => { const el = document.getElementById(id); if (el) setTimeout(() => el.classList.add("on"), 180 + i * 130); });
+
+    function countUp(el) {
+      const target = parseFloat(el.dataset.target), suffix = el.dataset.suffix || "", dec = parseInt(el.dataset.decimal || 0);
+      let s = null;
+      const step = ts => {
+        if (!s) s = ts;
+        const p = Math.min((ts - s) / 1200, 1), val = target * p;
+        el.textContent = (dec ? val.toFixed(dec) : Math.round(val)) + suffix;
+        if (p < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    }
+
+    const statEls = [0,1,2,3,4].map(i => document.getElementById("st" + i));
+    const statsObs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          statEls.forEach((el, i) => { if (!el) return; setTimeout(() => { el.classList.add("on"); const v = el.querySelector("[data-target]"); if (v) countUp(v); }, i * 90); });
+          statsObs.disconnect();
+        }
+      });
+    }, { threshold: 0.3 });
+    if (statEls[0]) statsObs.observe(statEls[0].parentElement);
+
+    const resultObs = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.querySelectorAll("[data-target]").forEach((el, i) => setTimeout(() => countUp(el), i * 120)); resultObs.unobserve(e.target); } });
+    }, { threshold: 0.2 });
+    document.querySelectorAll(".pResults").forEach(el => resultObs.observe(el));
+
+    const revealObs = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add("on"); revealObs.unobserve(e.target); } });
+    }, { threshold: 0.10 });
+    document.querySelectorAll(".rv, .rv-left, .rv-right, .rv-scale").forEach(el => { if (!el.id || !el.id.startsWith("rv")) revealObs.observe(el); });
+
+    window.addEventListener("scroll", () => { const el = document.getElementById("pHeroLogo"); if (el) el.style.transform = `translateY(${window.scrollY * -0.06}px)`; }, { passive: true });
+
+    const COPY = {
+      en: {
+        'hero.eyebrow':'MOBILE · 2025 · FLUTTER','hero.sub':'Flutter companion app for the BABYCAM smart monitor. Real-time WiFi video streaming, environmental data, AI cry detection alerts, and AWS-backed storage — iOS & Android from one codebase.','hero.badge':'Prototype validated · Medivietech Paris',
+        'stat.0':'Stream latency','stat.1':'Live resolution','stat.2':'Env. sensors','stat.3':'Platforms — iOS & Android','stat.4':'Codebase',
+        'ctx.label':'Context','ctx.title':'The firmware is only half the product.','ctx.body1':"An embedded system without a usable software layer is a prototype no one will adopt. The BABYCAM hardware streams H.264 video over WiFi — but parents need an app that receives it, surfaces alerts, and makes sense of the sensor data, all in real time.",'ctx.body2':'Built as the companion to <strong style="color:var(--fg-1)">BABYCAM</strong>, this Flutter application handles stream decoding, AI alert delivery, environmental monitoring display, remote device control, and cloud sync — targeting both iOS and Android from a single Dart codebase.',
+        'feat.label':'Features','feat.title':'Six features. One screen.','feat.0.name':'Live stream','feat.0.desc':'1080p@30FPS H.264 stream decoded and rendered in real time — under 200ms end-to-end latency from sensor to screen.','feat.1.name':'AI cry detection','feat.1.desc':'On-chip AI events pushed instantly to the app — cry, movement, silence. Push notifications via AWS SNS when the app is in background.','feat.2.name':'Environmental monitoring','feat.2.desc':'Live temperature, humidity, air quality, and luminosity readings from 4 embedded sensors.','feat.3.name':'Remote controls','feat.3.desc':'Remotely trigger the integrated nightlight and play lullabies through the Class D amplifier.','feat.4.name':'AWS cloud sync','feat.4.desc':'Environmental data and event logs synced to AWS for long-term storage, multi-device access, and parental reporting.','feat.5.name':'History & stats','feat.5.desc':'Sleep pattern history, cry frequency charts, and room condition trends.',
+        'arch.label':'Architecture','arch.title':'Flutter + WiFi + AWS. One codebase, two platforms.','arch.text':'The app communicates directly with the BABYCAM device over local WiFi for video and control. Cloud features are handled via AWS — S3, SNS, and Lambda.',
+        'val.label':'Validation','val.title':'Validated end-to-end with the BABYCAM prototype.','val.text':'Developed and validated alongside the BABYCAM embedded system over 6 months at Medivietech (Paris).','result.0':'End-to-end latency — sensor to Flutter screen','result.1':'Live 1080p stream without frame drops','result.2':'Environmental sensors displayed live','result.3':'Codebase — iOS & Android from a single Flutter repo',
+        'next.label':'Next project','nav.work':'Work','nav.skills':'Skills','nav.about':'About','nav.contact':'Contact'
+      },
+      fr: {
+        'hero.eyebrow':'MOBILE · 2025 · FLUTTER','hero.sub':'Application Flutter compagnon de BABYCAM. Streaming vidéo WiFi temps réel, données environnementales, alertes IA détection pleurs, backend AWS — iOS & Android depuis un seul codebase.','hero.badge':'Prototype validé · Medivietech Paris',
+        'stat.0':'Latence stream','stat.1':'Résolution live','stat.2':'Capteurs env.','stat.3':'Plateformes — iOS & Android','stat.4':'Codebase',
+        'ctx.label':'Contexte','ctx.title':'Le firmware ne représente que la moitié du produit.','ctx.body1':"Un système embarqué sans couche logicielle utilisable reste un prototype que personne n'adopte. Le hardware BABYCAM streame de la vidéo H.264 via WiFi — mais les parents ont besoin d'une app qui la reçoit, remonte les alertes et donne du sens aux données capteurs, en temps réel.",'ctx.body2':'Développée comme compagnon de <strong style="color:var(--fg-1)">BABYCAM</strong>, cette application Flutter gère le décodage du stream, la livraison des alertes IA, l\'affichage du monitoring environnemental, le contrôle à distance du device et la synchronisation cloud — ciblant iOS et Android depuis un seul codebase Dart.',
+        'feat.label':'Fonctionnalités','feat.title':'Six fonctionnalités. Un écran.','feat.0.name':'Stream live','feat.0.desc':'Stream H.264 1080p@30FPS décodé et rendu en temps réel — moins de 200ms de latence de bout en bout.','feat.1.name':'Détection pleurs IA','feat.1.desc':'Événements IA poussés instantanément à l\'app — pleurs, mouvement, silence. Notifications push via AWS SNS en arrière-plan.','feat.2.name':'Monitoring environnemental','feat.2.desc':'Lectures live de température, humidité, qualité d\'air et luminosité depuis les 4 capteurs embarqués.','feat.3.name':'Contrôles à distance','feat.3.desc':'Déclencher à distance la veilleuse intégrée et jouer des berceuses via l\'ampli Class D.','feat.4.name':'Sync cloud AWS','feat.4.desc':'Données environnementales et logs d\'événements synchronisés sur AWS pour stockage long terme et accès multi-device.','feat.5.name':'Historique & stats','feat.5.desc':'Historique des patterns de sommeil, fréquence des pleurs et tendances des conditions ambiantes.',
+        'arch.label':'Architecture','arch.title':'Flutter + WiFi + AWS. Un codebase, deux plateformes.','arch.text':'L\'app communique directement avec le device BABYCAM sur le réseau WiFi local pour le flux vidéo et les commandes. Les fonctionnalités cloud sont gérées via AWS — S3, SNS et Lambda.',
+        'val.label':'Validation','val.title':'Validé de bout en bout avec le prototype BABYCAM.','val.text':'Développée et validée en parallèle avec le système embarqué BABYCAM sur 6 mois chez Medivietech (Paris).','result.0':'Latence de bout en bout — capteur à écran Flutter','result.1':'Stream 1080p live sans chute de frames','result.2':'Capteurs environnementaux affichés en live','result.3':'Codebase — iOS & Android depuis un seul repo Flutter',
+        'next.label':'Projet suivant','nav.work':'Projets','nav.skills':'Compétences','nav.about':'À propos','nav.contact':'Contact'
+      }
+    };
+
+    let lang = localStorage.getItem("th-lang") || "en";
+    function applyLang() {
+      document.querySelectorAll("[data-i18n]").forEach(el => {
+        const k = el.dataset.i18n, v = COPY[lang][k];
+        if (v) el.innerHTML = v;
+      });
+    }
+    applyLang();
+    window.addEventListener("storage", e => { if (e.key === "th-lang") { lang = e.newValue || "en"; applyLang(); } });
+  </script>
+</body>
+</html>

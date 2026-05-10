@@ -1,0 +1,944 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BABYCAM — Tom Huyghe</title>
+  <link rel="icon" type="image/png" href="../../../assets/favicon.png" media="(prefers-color-scheme: dark)" />
+  <link rel="icon" type="image/png" href="../../../assets/favicon-light.png" media="(prefers-color-scheme: light)" />
+  <meta name="description" content="Smart baby monitor — ESP32-P4, 1080p@30FPS, H.264, AI cry detection, Flutter app. Prototype validated at Medivietech." />
+  <link rel="stylesheet" href="../../../colors_and_type.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    html, body { margin: 0; padding: 0; }
+    body { background: var(--bg-0); overflow-x: hidden; }
+    img { display: block; max-width: 100%; }
+
+    /* ── Accent override: mint + lavender (from BABYCAM logo) ── */
+    :root {
+      --teal:      #72CDB5;
+      --teal-soft: #9AE0CC;
+      --teal-deep: #4FBAA0;
+      --teal-glow: rgba(114,205,181,0.25);
+      --teal-pale: rgba(114,205,181,0.08);
+      --lav:       #9E96CC;
+      --lav-pale:  rgba(158,150,204,0.08);
+    }
+
+    /* ── Track separators ── */
+    .pTrack {
+      display: flex; align-items: center; gap: var(--s-4);
+      max-width: var(--max-width); margin: 0 auto;
+      padding: var(--s-7) var(--gutter) 0;
+    }
+    .pTrack-line { flex: 1; height: 1px; background: var(--border); }
+    .pTrack-label {
+      font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.16em;
+      text-transform: uppercase; color: var(--fg-3);
+      display: flex; align-items: center; gap: 8px;
+      white-space: nowrap;
+    }
+    .pTrack-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+    .pTrack--embedded .pTrack-dot { background: var(--teal); }
+    .pTrack--software .pTrack-dot { background: var(--lav); }
+    .pTrack--embedded .pTrack-label { color: var(--teal); opacity: 0.7; }
+    .pTrack--software .pTrack-label { color: var(--lav); opacity: 0.7; }
+
+    /* ── Reading progress ── */
+    .pProgress {
+      position: fixed; top: 0; left: 0; z-index: 200;
+      height: 2px; width: 0%;
+      background: linear-gradient(90deg, var(--teal), var(--lav));
+      transition: width 80ms linear; pointer-events: none;
+    }
+
+    /* ── Mouse glow ── */
+    .pMouseGlow {
+      position: fixed; pointer-events: none; z-index: 4;
+      width: 700px; height: 700px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(114,205,181,0.07) 0%, transparent 65%);
+      transform: translate(-50%, -50%);
+      opacity: 0; transition: opacity 0.4s;
+    }
+
+    /* ── Reveals ── */
+    .rv {
+      opacity: 0; transform: translateY(22px);
+      transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
+    }
+    .rv.on { opacity: 1; transform: translateY(0); }
+    .rv-left {
+      opacity: 0; transform: translateX(-28px);
+      transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
+    }
+    .rv-left.on { opacity: 1; transform: translateX(0); }
+    .rv-right {
+      opacity: 0; transform: translateX(28px);
+      transition: opacity 0.75s var(--ease), transform 0.75s var(--ease);
+    }
+    .rv-right.on { opacity: 1; transform: translateX(0); }
+    .rv-scale {
+      opacity: 0; transform: scale(0.94);
+      transition: opacity 0.6s var(--ease), transform 0.6s var(--ease);
+    }
+    .rv-scale.on { opacity: 1; transform: scale(1); }
+    @media (prefers-reduced-motion: reduce) {
+      .rv,.rv-left,.rv-right,.rv-scale { opacity:1; transform:none; transition:none; }
+    }
+
+    /* ── Nav ── */
+    .pNav {
+      position: sticky; top: 0; z-index: 50;
+      border-bottom: 1px solid transparent;
+      transition: background var(--motion) var(--ease), border-color var(--motion) var(--ease);
+    }
+    .pNav.scrolled {
+      background: rgba(7,7,11,0.85);
+      backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+      border-bottom-color: var(--border);
+    }
+    .pNav-inner {
+      max-width: var(--max-width); margin: 0 auto;
+      padding: 10px var(--gutter);
+      display: flex; align-items: center;
+      gap: var(--s-5);
+    }
+    .pNav-brand {
+      display: inline-flex; align-items: center; gap: 10px;
+      font-weight: 600; font-size: 15px; letter-spacing: -0.01em;
+      color: var(--fg-1); text-decoration: none; white-space: nowrap; flex-shrink: 0;
+    }
+    .pNav-brand:hover { color: var(--fg-1); }
+    .pNav-brand-logo {
+      height: 100px; width: auto; object-fit: contain; flex-shrink: 0;
+      filter: brightness(0) invert(1);
+      transition: filter var(--motion-fast) var(--ease);
+      margin: -18px -12px;
+    }
+    .pNav-brand:hover .pNav-brand-logo {
+      filter: brightness(0) invert(1) drop-shadow(0 0 8px rgba(124,92,255,0.6));
+    }
+    .pNav-links { display: flex; gap: var(--s-5); flex: 1; }
+    .pNav-links a {
+      font-size: 13px; color: var(--fg-2); font-weight: 500;
+      white-space: nowrap; text-decoration: none;
+      position: relative; padding-bottom: 2px;
+      transition: color var(--motion-fast) var(--ease);
+    }
+    .pNav-links a::after {
+      content: ""; position: absolute; bottom: -2px; left: 0;
+      width: 0; height: 1px; background: var(--accent);
+      transition: width var(--motion) var(--ease);
+    }
+    .pNav-links a:hover { color: var(--fg-1); }
+    .pBurger {
+      display: none; flex-direction: column; gap: 5px;
+      background: none; border: none; padding: 4px; cursor: pointer; margin-left: auto;
+    }
+    .pBurger span {
+      display: block; width: 20px; height: 1.5px; background: var(--fg-2);
+      transition: transform var(--motion-fast) var(--ease), opacity var(--motion-fast) var(--ease);
+      transform-origin: center;
+    }
+    .pBurger.is-open span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+    .pBurger.is-open span:nth-child(2) { opacity: 0; }
+    .pBurger.is-open span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+    .pMobileMenu {
+      display: none; position: fixed; inset: 0; top: 57px;
+      background: rgba(7,7,11,0.97); backdrop-filter: blur(16px);
+      z-index: 49; flex-direction: column;
+      padding: var(--s-7) var(--gutter); gap: var(--s-5);
+      border-top: 1px solid var(--border);
+    }
+    .pMobileMenu.is-open { display: flex; }
+    .pMobileMenu a {
+      font-size: 22px; font-weight: 600; color: var(--fg-2);
+      text-decoration: none; letter-spacing: -0.01em;
+      display: flex; align-items: center; gap: 14px;
+      transition: color var(--motion-fast) var(--ease);
+    }
+    .pMobileMenu a:hover { color: var(--fg-1); }
+
+    /* ── Hero ── */
+    .pHero { position: relative; overflow: hidden; min-height: 92vh; }
+    .pHero-bg { position: absolute; inset: 0; z-index: 0; }
+    .pHero-texture {
+      position: absolute; inset: 0;
+      background: url("../../../assets/texture-teal.jpg") center/cover;
+      mix-blend-mode: screen; opacity: 0.10;
+    }
+    .pHero-veil {
+      position: absolute; inset: 0;
+      background: linear-gradient(180deg, rgba(7,7,11,0.15) 0%, rgba(7,7,11,0.55) 55%, var(--bg-0) 100%);
+    }
+    .pHero-ambient {
+      position: absolute; right: 8%; top: 50%; transform: translateY(-50%);
+      width: 540px; height: 540px; border-radius: 50%;
+      background: radial-gradient(circle,
+        rgba(114,205,181,0.10) 0%,
+        rgba(158,150,204,0.08) 45%,
+        transparent 70%);
+      pointer-events: none; z-index: 1;
+    }
+    .pHero-inner {
+      position: relative; z-index: 2;
+      max-width: var(--max-width); margin: 0 auto; padding: 0 var(--gutter);
+      min-height: 92vh; display: grid; grid-template-columns: 1fr 1fr;
+      align-items: center; gap: var(--s-8);
+    }
+    .pHero-left { display: flex; flex-direction: column; gap: var(--s-5); padding: var(--s-10) 0 var(--s-8); }
+    .pHero-right { display: flex; align-items: center; justify-content: center; padding: var(--s-8) 0; }
+
+    .pHero-eyebrow {
+      font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--fg-3);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .pHero-eyebrow::before { content: ""; width: 20px; height: 1px; background: var(--teal); flex-shrink: 0; }
+    .pHero-title {
+      font-size: clamp(60px, 8vw, 112px); line-height: 0.92;
+      font-weight: 600; letter-spacing: -0.04em; color: var(--fg-1); margin: 0;
+    }
+    .pHero-sub { font-size: 17px; line-height: 27px; color: var(--fg-2); max-width: 440px; margin: 0; }
+    .pHero-scroll {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-family: var(--font-mono); font-size: 10px;
+      letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-4);
+    }
+    .pHero-scroll svg { animation: scrollBounce 2.2s ease-in-out infinite; }
+    @keyframes scrollBounce { 0%,100% { transform:translateY(0); } 50% { transform:translateY(5px); } }
+
+    /* ── Logo hero ── */
+    .pHero-applogo {
+      width: 100%; max-width: 400px;
+      filter: drop-shadow(0 32px 64px rgba(0,0,0,0.45))
+              drop-shadow(0 0 80px rgba(114,205,181,0.18))
+              drop-shadow(0 0 40px rgba(158,150,204,0.12));
+      animation: logoFloat 7s ease-in-out infinite;
+      will-change: transform;
+    }
+    @keyframes logoFloat {
+      0%,100% { transform: translateY(0px) rotate(-1deg); }
+      50%      { transform: translateY(-16px) rotate(1deg); }
+    }
+
+    /* ── Stats bar ── */
+    .pStats {
+      border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+      background: rgba(14,14,20,0.85); backdrop-filter: blur(10px);
+    }
+    .pStats-inner {
+      max-width: var(--max-width); margin: 0 auto; padding: 0 var(--gutter); display: flex;
+    }
+    .pStat {
+      flex: 1; padding: var(--s-5) var(--s-4); border-right: 1px solid var(--border);
+      opacity: 0; transform: translateY(14px);
+      transition: opacity 0.55s var(--ease), transform 0.55s var(--ease);
+    }
+    .pStat:last-child { border-right: 0; }
+    .pStat.on { opacity: 1; transform: translateY(0); }
+    .pStat-val {
+      font-size: 28px; font-weight: 600; letter-spacing: -0.025em; line-height: 1; margin-bottom: 5px;
+      background: linear-gradient(135deg, var(--fg-1) 30%, var(--teal-soft) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .pStat-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--fg-3); }
+
+    /* ── Sections ── */
+    .pSection { border-top: 1px solid var(--border); }
+    .pSection-inner {
+      max-width: var(--max-width); margin: 0 auto; padding: var(--s-9) var(--gutter);
+      display: grid; grid-template-columns: 220px 1fr; gap: var(--s-9); align-items: start;
+    }
+    .pSection-label {
+      font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--fg-3);
+      position: sticky; top: 80px; display: flex; align-items: center; gap: 10px;
+    }
+    .pSection-label::before { content: ""; width: 16px; height: 1px; background: var(--teal); flex-shrink: 0; }
+    .pSection-body { display: flex; flex-direction: column; gap: var(--s-6); }
+    .pSection-title { font-size: 38px; line-height: 44px; font-weight: 600; letter-spacing: -0.025em; color: var(--fg-1); margin: 0; }
+    .pSection-text { font-size: 16px; line-height: 27px; color: var(--fg-2); margin: 0; max-width: 640px; }
+
+    /* ── Spec table ── */
+    .pSpecs { display: flex; flex-direction: column; }
+    .pSpec { display: grid; grid-template-columns: 160px 1fr; gap: var(--s-4); padding: 13px 0; border-top: 1px solid var(--border); }
+    .pSpec:first-child { border-top: 0; }
+    .pSpec dt { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--fg-3); padding-top: 2px; }
+    .pSpec dd { margin: 0; font-size: 14px; line-height: 22px; color: var(--fg-1); }
+
+    /* ── Hardware photo ── */
+    .pHwPhoto {
+      border-radius: var(--r-2); overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .pHwPhoto img { width: 100%; display: block; }
+
+    /* ── Architecture diagram ── */
+    .pDiagram {
+      border-radius: var(--r-2); overflow: hidden;
+      background: #F4F4F0;
+    }
+    .pDiagram img { width: 100%; display: block; }
+
+    /* ── Phone mockup ── */
+    .pPhone {
+      max-width: 300px; margin: 0 auto;
+      border-radius: 40px; overflow: hidden;
+      border: 1px solid var(--border);
+      box-shadow: 0 24px 64px rgba(0,0,0,0.55), 0 0 50px var(--teal-glow);
+    }
+    .pPhone img { width: 100%; display: block; }
+
+    /* ── Chips ── */
+    .pChips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .pChip {
+      font-family: var(--font-mono); font-size: 11px;
+      padding: 5px 11px; border: 1px solid var(--border);
+      border-radius: 999px; color: var(--fg-2); letter-spacing: 0.02em;
+      transition: border-color var(--motion-fast) var(--ease), color var(--motion-fast) var(--ease);
+      cursor: default;
+    }
+    .pChip:hover { border-color: var(--teal); color: var(--teal-soft); }
+
+    /* ── Feature grid ── */
+    .pFeatures { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4); }
+    .pFeature {
+      background: var(--bg-1); border: 1px solid var(--border); border-radius: var(--r-3);
+      padding: var(--s-5); display: flex; flex-direction: column; gap: 10px;
+      transition: border-color var(--motion) var(--ease), background var(--motion) var(--ease);
+    }
+    .pFeature:hover { border-color: var(--border-strong); background: var(--bg-2); }
+    .pFeature-icon { font-size: 20px; }
+    .pFeature-name { font-size: 14px; font-weight: 600; color: var(--fg-1); letter-spacing: -0.01em; }
+    .pFeature-desc { font-size: 13px; line-height: 20px; color: var(--fg-2); }
+
+    /* ── Result cards ── */
+    .pResults { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4); }
+    .pResult {
+      background: var(--bg-1); border: 1px solid var(--border); border-radius: var(--r-3);
+      padding: var(--s-5) var(--s-5) var(--s-4); display: flex; flex-direction: column; gap: 6px;
+      transition: border-color var(--motion) var(--ease), background var(--motion) var(--ease);
+    }
+    .pResult:hover { border-color: var(--border-strong); background: var(--bg-2); }
+    .pResult-val {
+      font-size: 42px; font-weight: 600; letter-spacing: -0.03em; line-height: 1;
+      background: linear-gradient(135deg, var(--fg-1) 30%, var(--teal-soft) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .pResult-label { font-size: 13px; line-height: 20px; color: var(--fg-2); }
+
+    /* ── Video pipeline diagram ── */
+    .pPipeline {
+      display: flex; align-items: center; gap: 0;
+      background: var(--bg-1); border: 1px solid var(--border);
+      border-radius: var(--r-2); overflow: hidden;
+    }
+    .pPipeStep {
+      flex: 1; padding: var(--s-4) var(--s-3); text-align: center;
+      border-right: 1px solid var(--border);
+      position: relative;
+      transition: background var(--motion-fast) var(--ease);
+    }
+    .pPipeStep:last-child { border-right: 0; }
+    .pPipeStep:hover { background: var(--bg-2); }
+    .pPipeStep-name { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg-3); margin-bottom: 5px; }
+    .pPipeStep-val { font-size: 12px; font-weight: 600; color: var(--teal); }
+    .pPipeArrow {
+      position: absolute; right: -1px; top: 50%; transform: translateY(-50%);
+      color: var(--fg-4); font-size: 12px; z-index: 1;
+    }
+
+    /* ── GitHub link ── */
+    .pGithub {
+      display: inline-flex; align-items: center; gap: var(--s-3);
+      background: var(--bg-1); border: 1px solid var(--border);
+      border-radius: var(--r-2); padding: 12px 20px;
+      text-decoration: none; color: var(--fg-1); font-size: 14px; font-weight: 500; align-self: flex-start;
+      transition: border-color var(--motion-fast) var(--ease), background var(--motion-fast) var(--ease), box-shadow var(--motion-fast) var(--ease);
+    }
+    .pGithub:hover { border-color: var(--teal); background: var(--teal-pale); box-shadow: 0 0 0 1px rgba(59,191,170,0.2); color: var(--fg-1); }
+
+    /* ── Lang toggle ── */
+    .pNav-right { display:flex; align-items:center; gap:var(--s-3); }
+    .pLang { display:flex; align-items:center; gap:2px; background:var(--bg-2); border:1px solid var(--border); border-radius:var(--r-1); padding:2px; }
+    .pLangBtn { background:none; border:none; cursor:pointer; font-family:var(--font-mono); font-size:10px; letter-spacing:.06em; color:var(--fg-3); padding:3px 7px; border-radius:2px; transition:all var(--motion-fast) var(--ease); }
+    .pLangBtn.is-active { background:var(--bg-3); color:var(--fg-1); }
+    .pLangBtn:hover:not(.is-active) { color:var(--fg-2); }
+
+    /* ── Next ── */
+    .pNext { border-top: 1px solid var(--border); background: var(--bg-1); }
+    .pNext-inner {
+      max-width: var(--max-width); margin: 0 auto; padding: var(--s-8) var(--gutter);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .pNext-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--fg-3); }
+    .pNext-link {
+      font-size: 24px; font-weight: 600; letter-spacing: -0.015em; color: var(--fg-1);
+      text-decoration: none; display: inline-flex; align-items: center; gap: var(--s-3);
+      transition: color var(--motion-fast) var(--ease);
+    }
+    .pNext-link svg { transition: transform var(--motion-fast) var(--ease); }
+    .pNext-link:hover { color: var(--teal-soft); }
+    .pNext-link:hover svg { transform: translateX(5px); }
+
+    /* ── Footer ── */
+    footer { border-top: 1px solid var(--border); }
+    .pFooter {
+      max-width: var(--max-width); margin: 0 auto; padding: var(--s-5) var(--gutter);
+      display: flex; justify-content: space-between; align-items: center;
+      font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.04em; color: var(--fg-3);
+    }
+
+    /* ── Stagger ── */
+    .pSection-body > *:nth-child(1) { transition-delay: 0ms; }
+    .pSection-body > *:nth-child(2) { transition-delay: 80ms; }
+    .pSection-body > *:nth-child(3) { transition-delay: 160ms; }
+    .pSection-body > *:nth-child(4) { transition-delay: 240ms; }
+    .pSection-body > *:nth-child(5) { transition-delay: 320ms; }
+
+    /* ── Responsive ── */
+    @media (max-width: 960px) {
+      .pNav-links { display: none; }
+      .pBurger { display: flex; }
+      .pHero-inner { grid-template-columns: 1fr; min-height: auto; }
+      .pHero-right { display: none; }
+      .pHero-left { padding: var(--s-9) 0 var(--s-7); }
+      .pSection-inner { grid-template-columns: 1fr; gap: var(--s-6); }
+      .pSection-label { position: static; }
+      .pStats-inner { flex-wrap: wrap; }
+      .pStat { flex: 1 1 45%; }
+      .pResults, .pFeatures { grid-template-columns: 1fr; }
+      .pNext-inner { flex-direction: column; gap: var(--s-4); align-items: flex-start; }
+      .pPipeline { flex-wrap: wrap; }
+    }
+    @media (max-width: 600px) {
+      .pHero-title { font-size: 56px; }
+      .pSection-inner { padding: var(--s-7) var(--s-5); }
+      .pStat { flex: 1 1 100%; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="pProgress" id="pProgress"></div>
+  <div class="pMouseGlow" id="pMouseGlow"></div>
+
+  <!-- NAV -->
+  <header class="pNav" id="pNav">
+    <div class="pNav-inner">
+      <a href="../index.html" class="pNav-brand">
+        <img src="../../../assets/logo.png" alt="" class="pNav-brand-logo" />
+        Tom Huyghe
+      </a>
+      <nav class="pNav-links">
+        <a href="../index.html#work" data-i18n="nav.work">Work</a>
+        <a href="../index.html#skills" data-i18n="nav.skills">Skills</a>
+        <a href="../index.html#about" data-i18n="nav.about">About</a>
+        <a href="../index.html#contact" data-i18n="nav.contact">Contact</a>
+      </nav>
+      <div class="pLang">
+        <button class="pLangBtn" data-lang="en" onclick="setLang('en')">EN</button>
+        <button class="pLangBtn" data-lang="fr" onclick="setLang('fr')">FR</button>
+      </div>
+      <button class="pBurger" id="pBurger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+  <div class="pMobileMenu" id="pMobileMenu">
+    <a href="../index.html#work" data-i18n="nav.work" onclick="closeMobileMenu()">Work</a>
+    <a href="../index.html#skills" data-i18n="nav.skills" onclick="closeMobileMenu()">Skills</a>
+    <a href="../index.html#about" data-i18n="nav.about" onclick="closeMobileMenu()">About</a>
+    <a href="../index.html#contact" data-i18n="nav.contact" onclick="closeMobileMenu()">Contact</a>
+    <div class="pLang" style="margin-top:var(--s-4)">
+      <button class="pLangBtn" data-lang="en" onclick="setLang('en');closeMobileMenu()">EN</button>
+      <button class="pLangBtn" data-lang="fr" onclick="setLang('fr');closeMobileMenu()">FR</button>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <section class="pHero">
+    <div class="pHero-bg">
+      <div class="pHero-texture"></div>
+      <div class="pHero-veil"></div>
+    </div>
+    <div class="pHero-ambient"></div>
+
+    <div class="pHero-inner">
+      <div class="pHero-left">
+        <div class="pHero-eyebrow rv" id="rv0" data-i18n="hero.eyebrow">EMBEDDED · 2025 · IOT</div>
+        <h1 class="pHero-title rv" id="rv1">BABYCAM</h1>
+        <p class="pHero-sub rv" id="rv2" data-i18n="hero.sub">
+          Intelligent baby monitor with embedded AI. 1080p@30FPS, H.264 hardware compression, AI cry detection, environmental sensors — and a Flutter app to tie it all together.
+        </p>
+        <div class="pHero-scroll rv" id="rv3">
+          <span data-i18n="hero.scroll">Scroll to explore</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+        </div>
+      </div>
+
+      <!-- App logo -->
+      <div class="pHero-right rv-right" id="rv4">
+        <img src="../../../assets/babycam-logo.png" alt="BABYCAM — intelligent baby monitor" class="pHero-applogo" id="pHeroLogo" />
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS BAR -->
+  <div class="pStats">
+    <div class="pStats-inner">
+      <div class="pStat" id="st0">
+        <div class="pStat-val" data-target="1080" data-suffix="p">1080p</div>
+        <div class="pStat-label" data-i18n="stat.0">Max resolution</div>
+      </div>
+      <div class="pStat" id="st1">
+        <div class="pStat-val" data-target="200" data-suffix="ms">&lt;200ms</div>
+        <div class="pStat-label" data-i18n="stat.1">Stream latency</div>
+      </div>
+      <div class="pStat" id="st2">
+        <div class="pStat-val" data-target="64" data-suffix="MB">64MB</div>
+        <div class="pStat-label" data-i18n="stat.2">PSRAM</div>
+      </div>
+      <div class="pStat" id="st3">
+        <div class="pStat-val" data-target="4" data-suffix="">4</div>
+        <div class="pStat-label" data-i18n="stat.3">Env. sensors</div>
+      </div>
+      <div class="pStat" id="st4">
+        <div class="pStat-val" data-target="130" data-suffix="°">130°</div>
+        <div class="pStat-label" data-i18n="stat.4">Field of view</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTEXT -->
+  <section class="pSection">
+    <div class="pSection-inner">
+      <div class="pSection-label rv-left" data-i18n="ctx.label">Context</div>
+      <div class="pSection-body">
+        <h2 class="pSection-title rv" data-i18n="ctx.title">Consumer baby monitors are dumb cameras.</h2>
+        <p class="pSection-text rv" data-i18n="ctx.body1">
+          Most baby monitors on the market stream compressed, delayed video with no intelligence — no cry detection, no environmental awareness, no real-time alerts. Parents are left staring at a blurry feed hoping something doesn't go wrong.
+        </p>
+        <p class="pSection-text rv" data-i18n="ctx.body2">
+          BABYCAM is a ground-up embedded system that combines an <strong style="color:var(--fg-1)">ESP32-P4 dual-core RISC-V</strong> with a 5MP camera, MEMS microphone, and four environmental sensors. Built during a 6-month internship at <strong style="color:var(--fg-1)">Medivietech (Paris)</strong> — the prototype was validated with an industrializable architecture ready for production.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <div class="pTrack pTrack--embedded">
+    <div class="pTrack-line"></div>
+    <div class="pTrack-label"><span class="pTrack-dot"></span>Embedded</div>
+    <div class="pTrack-line"></div>
+  </div>
+
+  <!-- HARDWARE -->
+  <section class="pSection">
+    <div class="pSection-inner">
+      <div class="pSection-label rv-left" data-i18n="hw.label">Hardware</div>
+      <div class="pSection-body">
+        <h2 class="pSection-title rv" data-i18n="hw.title">ESP32-P4. 400MHz. 64MB PSRAM.</h2>
+        <p class="pSection-text rv" data-i18n="hw.text">
+          The ESP32-P4 is Espressif's latest high-performance chip — dual RISC-V cores at 400MHz with 64MB PSRAM, a major leap over the standard 520KB. This headroom is what makes real-time H.264 compression and AI inference possible without offloading to a separate processor.
+        </p>
+        <dl class="pSpecs rv">
+          <div class="pSpec"><dt>MCU</dt><dd>ESP32-P4 — Dual RISC-V @ 400MHz, 64MB PSRAM</dd></div>
+          <div class="pSpec"><dt>Camera</dt><dd>OV5647 5MP — automatic IR-Cut filter, 130° FOV</dd></div>
+          <div class="pSpec"><dt>Resolution</dt><dd>1080p @ 30FPS · 720p @ 60FPS</dd></div>
+          <div class="pSpec"><dt>Audio</dt><dd>MEMS I2S microphone + Class D amplifier (lullabies)</dd></div>
+          <div class="pSpec"><dt>Env. sensors</dt><dd>Temperature · Humidity · Air quality · Light</dd></div>
+          <div class="pSpec"><dt>Night vision</dt><dd>Automatic IR-Cut switching — passive, no manual toggle</dd></div>
+          <div class="pSpec"><dt>Connectivity</dt><dd>WiFi 6 (802.11ax) + Bluetooth 5.3</dd></div>
+          <div class="pSpec"><dt>Interface</dt><dd>MIPI CSI-2 (camera) · I2C · I2S · SPI</dd></div>
+        </dl>
+        <div class="pHwPhoto rv-scale">
+          <img src="../../../assets/babycam-camera.png" alt="BABYCAM — prototype camera module with IR-cut filter" loading="lazy" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FIRMWARE -->
+  <section class="pSection">
+    <div class="pSection-inner">
+      <div class="pSection-label rv-left" data-i18n="fw.label">Firmware</div>
+      <div class="pSection-body">
+        <h2 class="pSection-title rv" data-i18n="fw.title">Hardware ISP → H.264 → WiFi. 1000+ lines of C.</h2>
+        <p class="pSection-text rv" data-i18n="fw.text">
+          The video pipeline runs entirely in hardware: the ESP32-P4's built-in ISP converts raw sensor output to YUV422, which is then H.264-compressed at the hardware level before streaming. This brings frame size from ~2.5MB (raw 1080p) down to ~500KB without touching a CPU cycle for compression.
+        </p>
+
+        <!-- Pipeline visual -->
+        <div class="pPipeline rv">
+          <div class="pPipeStep">
+            <div class="pPipeStep-name">Sensor</div>
+            <div class="pPipeStep-val">OV5647</div>
+          </div>
+          <div class="pPipeStep">
+            <div class="pPipeStep-name">ISP</div>
+            <div class="pPipeStep-val">YUV422</div>
+          </div>
+          <div class="pPipeStep">
+            <div class="pPipeStep-name">H.264</div>
+            <div class="pPipeStep-val">~500KB/f</div>
+          </div>
+          <div class="pPipeStep">
+            <div class="pPipeStep-name">WiFi 6</div>
+            <div class="pPipeStep-val">1.5 Mbps</div>
+          </div>
+          <div class="pPipeStep">
+            <div class="pPipeStep-name">Flutter</div>
+            <div class="pPipeStep-val">&lt;200ms</div>
+          </div>
+        </div>
+
+        <div class="pDiagram rv-scale">
+          <img src="../../../assets/babycam-architecture.png" alt="Video pipeline architecture — OV5647 → ISP → H.264 → WiFi" loading="lazy" />
+        </div>
+        <dl class="pSpecs rv">
+          <div class="pSpec"><dt>Framework</dt><dd>ESP-IDF (native C) — 1000+ lines</dd></div>
+          <div class="pSpec"><dt>Video</dt><dd>Hardware ISP → YUV422 → H.264 hardware encoder</dd></div>
+          <div class="pSpec"><dt>Compression</dt><dd>Raw 1080p: ~2.5MB/frame → H.264: ~500KB/frame</dd></div>
+          <div class="pSpec"><dt>Streaming</dt><dd>1.5 Mbps stable over WiFi 6 · &lt;200ms end-to-end</dd></div>
+          <div class="pSpec"><dt>AI inference</dt><dd>On-chip cry detection + movement classification</dd></div>
+          <div class="pSpec"><dt>Night vision</dt><dd>Automatic IR-Cut toggle based on ambient light sensor</dd></div>
+          <div class="pSpec"><dt>Backend (proto)</dt><dd>Python on Raspberry Pi — relay + processing pipeline</dd></div>
+        </dl>
+        <div class="pChips rv">
+          <span class="pChip">ESP32-P4</span>
+          <span class="pChip">ESP-IDF</span>
+          <span class="pChip">C / C++</span>
+          <span class="pChip">H.264</span>
+          <span class="pChip">MIPI CSI-2</span>
+          <span class="pChip">I2C · I2S</span>
+          <span class="pChip">WiFi 6</span>
+          <span class="pChip">BLE 5.3</span>
+          <span class="pChip">Python</span>
+          <span class="pChip">Raspberry Pi</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="pTrack pTrack--software">
+    <div class="pTrack-line"></div>
+    <div class="pTrack-label"><span class="pTrack-dot"></span>Software</div>
+    <div class="pTrack-line"></div>
+  </div>
+
+  <!-- MOBILE APP -->
+  <section class="pSection">
+    <div class="pSection-inner">
+      <div class="pSection-label rv-left" data-i18n="app.label">Mobile app</div>
+      <div class="pSection-body">
+        <h2 class="pSection-title rv" data-i18n="app.title">Flutter. iOS + Android. One codebase.</h2>
+        <p class="pSection-text rv" data-i18n="app.text">
+          The companion app is built in Flutter — a single codebase targeting iOS and Android. It receives the H.264 stream, renders it in real time, surfaces AI alerts, displays environmental data, and lets parents remotely control the nightlight and play lullabies.
+        </p>
+        <div class="pPhone rv-scale">
+          <img src="../../../assets/babycam-app.png" alt="BABYCAM — Flutter mobile app" loading="lazy" />
+        </div>
+        <div class="pFeatures rv-scale">
+          <div class="pFeature">
+            <div class="pFeature-icon">📹</div>
+            <div class="pFeature-name" data-i18n="feat.0.name">Live stream</div>
+            <div class="pFeature-desc" data-i18n="feat.0.desc">1080p@30FPS decoded and rendered in real time — under 200ms latency from sensor to screen.</div>
+          </div>
+          <div class="pFeature">
+            <div class="pFeature-icon">🤖</div>
+            <div class="pFeature-name" data-i18n="feat.1.name">AI cry detection</div>
+            <div class="pFeature-desc" data-i18n="feat.1.desc">On-chip AI classifies audio events — cry, movement, silence — and pushes instant alerts to the app.</div>
+          </div>
+          <div class="pFeature">
+            <div class="pFeature-icon">🌡️</div>
+            <div class="pFeature-name" data-i18n="feat.2.name">Environmental monitoring</div>
+            <div class="pFeature-desc" data-i18n="feat.2.desc">Live temperature, humidity, air quality, and light readings displayed alongside the video feed.</div>
+          </div>
+          <div class="pFeature">
+            <div class="pFeature-icon">🌙</div>
+            <div class="pFeature-name" data-i18n="feat.3.name">Night vision auto</div>
+            <div class="pFeature-desc" data-i18n="feat.3.desc">IR-Cut filter switches automatically at night. No manual toggle required — always the best image.</div>
+          </div>
+          <div class="pFeature">
+            <div class="pFeature-icon">🎵</div>
+            <div class="pFeature-name" data-i18n="feat.4.name">Remote controls</div>
+            <div class="pFeature-desc" data-i18n="feat.4.desc">Remotely trigger the integrated nightlight and play lullabies via the Class D amplifier.</div>
+          </div>
+          <div class="pFeature">
+            <div class="pFeature-icon">📊</div>
+            <div class="pFeature-name" data-i18n="feat.5.name">History &amp; stats</div>
+            <div class="pFeature-desc" data-i18n="feat.5.desc">Historical environmental data and event logs — sleep patterns, cry frequency, room conditions over time.</div>
+          </div>
+        </div>
+        <div class="pChips rv">
+          <span class="pChip">Flutter</span>
+          <span class="pChip">Dart</span>
+          <span class="pChip">iOS</span>
+          <span class="pChip">Android</span>
+          <span class="pChip">H.264 decode</span>
+          <span class="pChip">Real-time stream</span>
+          <span class="pChip">Push alerts</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- VALIDATION -->
+  <section class="pSection">
+    <div class="pSection-inner">
+      <div class="pSection-label rv-left" data-i18n="val.label">Validation</div>
+      <div class="pSection-body">
+        <h2 class="pSection-title rv" data-i18n="val.title">Prototype validated. Architecture industrializable.</h2>
+        <p class="pSection-text rv" data-i18n="val.text">
+          Built over 6 months at Medivietech (Paris) — from hardware selection and PCB evaluation, through firmware development and mobile app, to a validated prototype. The architecture was validated as industrializable, with a strategic pivot from DVP to MIPI CSI-2 interface during development to unlock full resolution and hardware ISP performance.
+        </p>
+        <div class="pResults rv-scale">
+          <div class="pResult">
+            <div class="pResult-val" data-target="30" data-suffix="FPS">30FPS</div>
+            <div class="pResult-label" data-i18n="result.0">1080p real-time stream without frame drops</div>
+          </div>
+          <div class="pResult">
+            <div class="pResult-val">&lt;200ms</div>
+            <div class="pResult-label" data-i18n="result.1">End-to-end latency from sensor to Flutter screen</div>
+          </div>
+          <div class="pResult">
+            <div class="pResult-val" data-target="4" data-suffix="">4</div>
+            <div class="pResult-label" data-i18n="result.2">Environmental sensors integrated and streaming live</div>
+          </div>
+          <div class="pResult">
+            <div class="pResult-val" data-target="1" data-suffix="">1</div>
+            <div class="pResult-label" data-i18n="result.3">Codebase — Flutter iOS + Android from a single repo</div>
+          </div>
+        </div>
+        <dl class="pSpecs rv">
+          <div class="pSpec"><dt>My role</dt><dd>Sole embedded + mobile developer — hardware, firmware, Flutter app</dd></div>
+          <div class="pSpec"><dt>Company</dt><dd>Medivietech, Paris</dd></div>
+          <div class="pSpec"><dt>Duration</dt><dd>April – October 2025 (6 months)</dd></div>
+          <div class="pSpec"><dt>Status</dt><dd>Prototype validated — industrializable architecture</dd></div>
+          <div class="pSpec"><dt>Key pivot</dt><dd>DVP → MIPI CSI-2 interface for full hardware ISP + H.264 support</dd></div>
+        </dl>
+        <a href="https://github.com/tomhyg/BABYCAM" target="_blank" rel="noopener noreferrer" class="pGithub rv">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+          </svg>
+          <span data-i18n="cta.github">View source — github.com/tomhyg/BABYCAM</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- NEXT PROJECT -->
+  <div class="pNext">
+    <div class="pNext-inner">
+      <div><div class="pNext-label" data-i18n="next.label">Next project</div></div>
+      <a href="sleepguard.html" class="pNext-link">
+        THE SLEEPGUARD
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+  </div>
+
+  <footer>
+    <div class="pFooter">
+      <span>© 2025 Tom Huyghe · Paris</span>
+      <a href="../index.html" style="color:var(--fg-3);text-decoration:none;font-family:var(--font-mono);font-size:11px">← Portfolio</a>
+    </div>
+  </footer>
+
+  <script>
+    const nav = document.getElementById("pNav");
+    window.addEventListener("scroll", () => { nav.classList.toggle("scrolled", window.scrollY > 24); }, { passive: true });
+
+    const progress = document.getElementById("pProgress");
+    window.addEventListener("scroll", () => {
+      const d = document.documentElement.scrollHeight - window.innerHeight;
+      progress.style.width = (d > 0 ? (window.scrollY / d) * 100 : 0) + "%";
+    }, { passive: true });
+
+    const glow = document.getElementById("pMouseGlow");
+    let gv = false;
+    document.addEventListener("mousemove", e => {
+      glow.style.left = e.clientX + "px"; glow.style.top = e.clientY + "px";
+      if (!gv) { glow.style.opacity = "1"; gv = true; }
+    });
+    document.addEventListener("mouseleave", () => { glow.style.opacity = "0"; gv = false; });
+
+    ["rv0","rv1","rv2","rv3"].forEach((id, i) => {
+      const el = document.getElementById(id);
+      if (el) setTimeout(() => el.classList.add("on"), 180 + i * 130);
+    });
+    setTimeout(() => { const el = document.getElementById("rv4"); if (el) el.classList.add("on"); }, 500);
+
+    function countUp(el) {
+      const target = parseFloat(el.dataset.target);
+      const suffix = el.dataset.suffix || "";
+      if (isNaN(target) || target === 0) { return; }
+      const duration = 1100; const startTime = performance.now();
+      function tick(now) {
+        const p = Math.min((now - startTime) / duration, 1);
+        const eased = 1 - Math.pow(1 - p, 3);
+        el.textContent = Math.round(target * eased) + suffix;
+        if (p < 1) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    }
+
+    const statEls = [0,1,2,3,4].map(i => document.getElementById("st" + i));
+    const statsObs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          statEls.forEach((el, i) => {
+            if (!el) return;
+            setTimeout(() => { el.classList.add("on"); const v = el.querySelector("[data-target]"); if (v) countUp(v); }, i * 90);
+          });
+          statsObs.disconnect();
+        }
+      });
+    }, { threshold: 0.3 });
+    if (statEls[0]) statsObs.observe(statEls[0].parentElement);
+
+    const resultObs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.querySelectorAll("[data-target]").forEach((el, i) => setTimeout(() => countUp(el), i * 120));
+          resultObs.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.2 });
+    document.querySelectorAll(".pResults").forEach(el => resultObs.observe(el));
+
+    const revealObs = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add("on"); revealObs.unobserve(e.target); } });
+    }, { threshold: 0.10 });
+    document.querySelectorAll(".rv, .rv-left, .rv-right, .rv-scale").forEach(el => {
+      if (!el.id || !el.id.startsWith("rv")) revealObs.observe(el);
+    });
+
+    /* ── Logo parallax ── */
+    const heroLogo = document.getElementById("pHeroLogo");
+    window.addEventListener("scroll", () => {
+      if (heroLogo) heroLogo.style.transform = `translateY(${window.scrollY * -0.06}px)`;
+    }, { passive: true });
+
+    /* ── i18n ── */
+    const COPY = {
+      en: {
+        'hero.eyebrow': 'EMBEDDED · 2025 · IOT',
+        'hero.sub': 'Intelligent baby monitor with embedded AI. 1080p@30FPS, H.264 hardware compression, AI cry detection, environmental sensors — and a Flutter app to tie it all together.',
+        'hero.scroll': 'Scroll to explore',
+        'stat.0': 'Max resolution',
+        'stat.1': 'Stream latency',
+        'stat.2': 'PSRAM',
+        'stat.3': 'Env. sensors',
+        'stat.4': 'Field of view',
+        'ctx.label': 'Context',
+        'ctx.title': 'Consumer baby monitors are dumb cameras.',
+        'ctx.body1': "Most baby monitors on the market stream compressed, delayed video with no intelligence — no cry detection, no environmental awareness, no real-time alerts. Parents are left staring at a blurry feed hoping something doesn't go wrong.",
+        'ctx.body2': 'BABYCAM is a ground-up embedded system that combines an <strong style="color:var(--fg-1)">ESP32-P4 dual-core RISC-V</strong> with a 5MP camera, MEMS microphone, and four environmental sensors. Built during a 6-month internship at <strong style="color:var(--fg-1)">Medivietech (Paris)</strong> — the prototype was validated with an industrializable architecture ready for production.',
+        'hw.label': 'Hardware',
+        'hw.title': 'ESP32-P4. 400MHz. 64MB PSRAM.',
+        'hw.text': "The ESP32-P4 is Espressif's latest high-performance chip — dual RISC-V cores at 400MHz with 64MB PSRAM, a major leap over the standard 520KB. This headroom is what makes real-time H.264 compression and AI inference possible without offloading to a separate processor.",
+        'fw.label': 'Firmware',
+        'fw.title': 'Hardware ISP → H.264 → WiFi. 1000+ lines of C.',
+        'fw.text': "The video pipeline runs entirely in hardware: the ESP32-P4's built-in ISP converts raw sensor output to YUV422, which is then H.264-compressed at the hardware level before streaming. This brings frame size from ~2.5MB (raw 1080p) down to ~500KB without touching a CPU cycle for compression.",
+        'app.label': 'Mobile app',
+        'app.title': 'Flutter. iOS + Android. One codebase.',
+        'app.text': 'The companion app is built in Flutter — a single codebase targeting iOS and Android. It receives the H.264 stream, renders it in real time, surfaces AI alerts, displays environmental data, and lets parents remotely control the nightlight and play lullabies.',
+        'feat.0.name': 'Live stream',
+        'feat.0.desc': '1080p@30FPS decoded and rendered in real time — under 200ms latency from sensor to screen.',
+        'feat.1.name': 'AI cry detection',
+        'feat.1.desc': 'On-chip AI classifies audio events — cry, movement, silence — and pushes instant alerts to the app.',
+        'feat.2.name': 'Environmental monitoring',
+        'feat.2.desc': 'Live temperature, humidity, air quality, and light readings displayed alongside the video feed.',
+        'feat.3.name': 'Night vision auto',
+        'feat.3.desc': 'IR-Cut filter switches automatically at night. No manual toggle required — always the best image.',
+        'feat.4.name': 'Remote controls',
+        'feat.4.desc': 'Remotely trigger the integrated nightlight and play lullabies via the Class D amplifier.',
+        'feat.5.name': 'History & stats',
+        'feat.5.desc': 'Historical environmental data and event logs — sleep patterns, cry frequency, room conditions over time.',
+        'val.label': 'Validation',
+        'val.title': 'Prototype validated. Architecture industrializable.',
+        'val.text': 'Built over 6 months at Medivietech (Paris) — from hardware selection and PCB evaluation, through firmware development and mobile app, to a validated prototype. The architecture was validated as industrializable, with a strategic pivot from DVP to MIPI CSI-2 interface during development to unlock full resolution and hardware ISP performance.',
+        'result.0': '1080p real-time stream without frame drops',
+        'result.1': 'End-to-end latency from sensor to Flutter screen',
+        'result.2': 'Environmental sensors integrated and streaming live',
+        'result.3': 'Codebase — Flutter iOS + Android from a single repo',
+        'cta.github': 'View source — github.com/tomhyg/BABYCAM',
+        'next.label': 'Next project',
+        'nav.work': 'Work', 'nav.skills': 'Skills', 'nav.about': 'About', 'nav.contact': 'Contact'
+      },
+      fr: {
+        'hero.eyebrow': 'EMBARQUÉ · 2025 · IOT',
+        'hero.sub': 'Babyphone intelligent avec IA embarquée. 1080p@30FPS, compression H.264 matérielle, détection de pleurs, capteurs d\'environnement — et une app Flutter pour tout piloter.',
+        'hero.scroll': 'Défiler pour explorer',
+        'stat.0': 'Résolution max',
+        'stat.1': 'Latence stream',
+        'stat.2': 'PSRAM',
+        'stat.3': 'Capteurs env.',
+        'stat.4': 'Champ de vision',
+        'ctx.label': 'Contexte',
+        'ctx.title': 'Les babyphones grand public sont de simples caméras.',
+        'ctx.body1': "La majorité des babyphones sur le marché diffusent une vidéo compressée et décalée sans aucune intelligence — pas de détection de pleurs, pas de surveillance environnementale, pas d'alertes en temps réel. Les parents regardent un flux flou en espérant que rien ne tourne mal.",
+        'ctx.body2': 'BABYCAM est un système embarqué conçu de zéro qui combine un <strong style="color:var(--fg-1)">ESP32-P4 double cœur RISC-V</strong> avec une caméra 5MP, un microphone MEMS et quatre capteurs environnementaux. Développé lors d\'un stage de 6 mois chez <strong style="color:var(--fg-1)">Medivietech (Paris)</strong> — prototype validé avec une architecture industrialisable prête pour la production.',
+        'hw.label': 'Matériel',
+        'hw.title': 'ESP32-P4. 400MHz. 64Mo PSRAM.',
+        'hw.text': "L'ESP32-P4 est la dernière puce haute performance d'Espressif — double cœur RISC-V à 400MHz avec 64Mo de PSRAM, un bond majeur par rapport aux 520Ko standard. Cette marge est ce qui rend possible la compression H.264 temps réel et l'inférence IA sans déléguer à un processeur séparé.",
+        'fw.label': 'Firmware',
+        'fw.title': 'ISP matériel → H.264 → WiFi. 1000+ lignes de C.',
+        'fw.text': "Le pipeline vidéo s'exécute entièrement en matériel : l'ISP intégré de l'ESP32-P4 convertit la sortie brute du capteur en YUV422, qui est ensuite compressé en H.264 au niveau matériel avant le streaming. Cela réduit la taille des trames de ~2,5Mo (1080p brut) à ~500Ko sans mobiliser un seul cycle CPU pour la compression.",
+        'app.label': 'App mobile',
+        'app.title': 'Flutter. iOS + Android. Une seule base de code.',
+        'app.text': "L'app compagnon est développée en Flutter — une base de code unique ciblant iOS et Android. Elle reçoit le flux H.264, le rendu en temps réel, remonte les alertes IA, affiche les données environnementales et permet aux parents de contrôler à distance la veilleuse et de lancer des berceuses.",
+        'feat.0.name': 'Stream live',
+        'feat.0.desc': '1080p@30FPS décodé et rendu en temps réel — moins de 200ms de latence du capteur à l\'écran.',
+        'feat.1.name': 'Détection de pleurs IA',
+        'feat.1.desc': "L'IA on-chip classifie les événements audio — pleurs, mouvement, silence — et envoie des alertes instantanées à l'app.",
+        'feat.2.name': 'Monitoring environnemental',
+        'feat.2.desc': 'Température, humidité, qualité de l\'air et luminosité en direct, affichés à côté du flux vidéo.',
+        'feat.3.name': 'Vision nocturne auto',
+        'feat.3.desc': "Le filtre IR-Cut bascule automatiquement la nuit. Aucun réglage manuel requis — toujours la meilleure image.",
+        'feat.4.name': 'Contrôles à distance',
+        'feat.4.desc': 'Déclenchez la veilleuse intégrée et lancez des berceuses via l\'ampli Class D, à distance.',
+        'feat.5.name': 'Historique & stats',
+        'feat.5.desc': "Données environnementales historiques et journaux d'événements — schémas de sommeil, fréquence des pleurs, conditions de la chambre.",
+        'val.label': 'Validation',
+        'val.title': 'Prototype validé. Architecture industrialisable.',
+        'val.text': 'Développé en 6 mois chez Medivietech (Paris) — de la sélection du hardware et de l\'évaluation du PCB, au développement firmware et app mobile, jusqu\'au prototype validé. L\'architecture a été validée comme industrialisable, avec un pivot stratégique de DVP vers l\'interface MIPI CSI-2 pour débloquer la pleine résolution et les performances ISP matérielles.',
+        'result.0': 'Stream 1080p temps réel sans perte de trames',
+        'result.1': 'Latence de bout en bout du capteur à l\'écran Flutter',
+        'result.2': 'Capteurs environnementaux intégrés et streamés en live',
+        'result.3': 'Base de code — Flutter iOS + Android depuis un seul dépôt',
+        'cta.github': 'Voir les sources — github.com/tomhyg/BABYCAM',
+        'next.label': 'Projet suivant',
+        'nav.work': 'Projets', 'nav.skills': 'Compétences', 'nav.about': 'À propos', 'nav.contact': 'Contact'
+      }
+    };
+
+    function setLang(l) {
+      localStorage.setItem('th-lang', l);
+      document.documentElement.lang = l;
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const t = COPY[l][el.dataset.i18n];
+        if (t !== undefined) el.innerHTML = t;
+      });
+      document.querySelectorAll('.pLangBtn').forEach(b => b.classList.toggle('is-active', b.dataset.lang === l));
+    }
+    /* ── Mobile burger ── */
+    const burger = document.getElementById("pBurger");
+    const mobileMenu = document.getElementById("pMobileMenu");
+    if (burger && mobileMenu) {
+      burger.addEventListener("click", () => {
+        burger.classList.toggle("is-open");
+        mobileMenu.classList.toggle("is-open");
+      });
+    }
+    function closeMobileMenu() {
+      if (burger) burger.classList.remove("is-open");
+      if (mobileMenu) mobileMenu.classList.remove("is-open");
+    }
+    (function(){ const l = localStorage.getItem('th-lang') || 'en'; setLang(l); })();
+  </script>
+</body>
+</html>
